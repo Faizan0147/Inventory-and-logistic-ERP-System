@@ -1,0 +1,37 @@
+# Git
+.git
+.gitignore
+
+# Python byte-cache
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual environments
+.venv
+venv
+env
+
+# Secrets — inject at runtime, never bake into image
+.env
+
+# Editor / OS
+.vscode
+.idea
+*.DS_Store
+
+# Build artefacts
+dist/
+build/
+*.egg-info/
+
+# Test artefacts
+.pytest_cache/
+htmlcov/
+.coverage
+
+# UV lock & version pins (not needed in image)
+uv.lock
+.python-version

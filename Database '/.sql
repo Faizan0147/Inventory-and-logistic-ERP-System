@@ -42,6 +42,21 @@ purchase_order_item [icon: list, color: blue] {
   UnitCost decimal
 }
 
+goods_receipt [icon: download, color: blue] {
+  GRNID string pk
+  POID string fk
+  WarehouseID string fk
+  ReceiptDate timestamp
+  Status string
+}
+
+goods_receipt_item [icon: list, color: blue] {
+  GRNItemID string pk
+  GRNID string fk
+  ProductID string fk
+  ReceivedQty int
+}
+
 // ================= INVENTORY =================
 
 category [icon: folder, color: green] {
@@ -211,6 +226,30 @@ payment [icon: credit-card, color: gray] {
   PaymentMethod string
   PaymentDate timestamp
 }
+
+// ===== Accounting Foundation =====
+
+chart_of_accounts [icon: book, color: gray] {
+  AccountID string pk
+  AccountName string
+  AccountType string
+}
+
+journal_entry [icon: edit, color: gray] {
+  JournalEntryID string pk
+  EntryDate timestamp
+  ReferenceType string
+  ReferenceID string
+}
+
+journal_entry_line [icon: list, color: gray] {
+  LineID string pk
+  JournalEntryID string fk
+  AccountID string fk
+  Debit decimal
+  Credit decimal
+}
+
 // ================= SECURITY =================
 
 role [icon: shield, color: black] {
@@ -246,7 +285,7 @@ notification [icon: bell, color: white] {
   Message string
   IsRead boolean
 }
-
+ 
 audit_log [icon: file-text, color: white] {
   LogID string pk
   ChangedBy string fk
