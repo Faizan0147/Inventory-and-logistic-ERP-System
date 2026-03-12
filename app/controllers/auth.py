@@ -1,0 +1,33 @@
+from fastapi import HTTPException
+import asyncpg
+
+from app.core.security import hash_password, verify_password, create_access_token
+from app.core.email import send_credentials_email
+from app.dto.auth import (
+    RegistrationRequestCreate,
+    RegistrationRequestRead,
+    LoginRequest,
+    TokenResponse,
+)
+from app.repositories import auth_repo
+
+
+async def register(conn: asyncpg.Connection, body: RegistrationRequestCreate) -> RegistrationRequestRead:
+    return await auth_repo.create_registration_request(conn, body)
+
+
+async def login(conn: asyncpg.Connection, body: LoginRequest) -> TokenResponse:
+    user = await auth_repo.get_user_by_email(conn, body.email)
+    if not user or not verify_password(body.password, user["password_hash"]):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    if not user["is_active"]:
+        raise HTTPException(status_code=403, detail="Account is deactivated")
+
+    token = create_access_token(
+        data={
+            "sub": user["user_id"],
+            "role": user["role"],
+            "supplier_id": user.get("supplier_id"),
+        }
+    )
+    return TokenResponse(access_token=token)
