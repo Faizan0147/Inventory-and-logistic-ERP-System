@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from app.database import create_pool, close_pool
-from app.api.v1.api import api_router
+from app.api import api_router
 
 
 @asynccontextmanager
