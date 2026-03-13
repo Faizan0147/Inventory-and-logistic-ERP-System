@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, status
 import asyncpg
 
 from app.database import get_connection
-from app.core.dependencies import get_current_user
+from app.utils.dependencies import get_current_user
 from app.dto.supplier import SupplierCreate, SupplierUpdate, SupplierRead
 from app.controllers import supplier as supplier_controller
 

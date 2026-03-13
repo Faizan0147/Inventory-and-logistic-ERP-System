@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     SMTP_PORT: int = 587
     SMTP_USER: str = ""
     SMTP_PASSWORD: str = ""
-    SMTP_FROM_EMAIL: str = "noreply@warehouse-erp.com"
+    SMTP_FROM_EMAIL: str = "umerfaisal132@gmail.com"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

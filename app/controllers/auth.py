@@ -1,15 +1,15 @@
 from fastapi import HTTPException
 import asyncpg
 
-from app.core.security import hash_password, verify_password, create_access_token
-from app.core.email import send_credentials_email
+from app.utils.security import hash_password, verify_password, create_access_token
+from app.utils.email import send_credentials_email
 from app.dto.auth import (
     RegistrationRequestCreate,
     RegistrationRequestRead,
     LoginRequest,
     TokenResponse,
 )
-from app.repositories import auth_repo
+from app.repositories import auth_repo, users_repo
 
 
 async def register(conn: asyncpg.Connection, body: RegistrationRequestCreate) -> RegistrationRequestRead:
@@ -17,7 +17,7 @@ async def register(conn: asyncpg.Connection, body: RegistrationRequestCreate) ->
 
 
 async def login(conn: asyncpg.Connection, body: LoginRequest) -> TokenResponse:
-    user = await auth_repo.get_user_by_email(conn, body.email)
+    user = await users_repo.get_user_by_email(conn, body.email)
     if not user or not verify_password(body.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Invalid email or password")
     if not user["is_active"]:

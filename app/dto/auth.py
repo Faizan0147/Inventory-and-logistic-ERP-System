@@ -31,7 +31,6 @@ class RegistrationRequestRead(BaseModel):
 
 class ApproveRequestBody(BaseModel):
     role: str  # "SUPERADMIN" or "SUPPLIER"
-    supplier_id: Optional[str] = None  # required when role == SUPPLIER
 
 
 # ── Login / Token DTOs ───────────────────────────────────────────────
@@ -50,8 +49,8 @@ class TokenResponse(BaseModel):
 
 class UserRead(BaseModel):
     user_id: str
-    name: EmailStr
-    email: str
+    name: str
+    email: EmailStr
     role: str
-    supplier_id: Optional[str] = None
+    # supplier_id: Optional[str] = None
     is_active: bool

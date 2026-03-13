@@ -10,7 +10,6 @@ import asyncpg
 from app.dto.auth import (
     RegistrationRequestCreate,
     RegistrationRequestRead,
-    UserRead,
 )
 
 
@@ -25,7 +24,7 @@ async def create_registration_request(
             (request_id, name, email, phone, company_name, message)
         VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING request_id, name, email, phone, company_name,
-                  message, status, created_at
+         message, status, created_at
         """,
         str(uuid4()),
         data.name,
@@ -80,67 +79,3 @@ async def update_request_status(
         reviewed_by,
         request_id,
     )
-
-
-# ── Users ────────────────────────────────────────────────────────────
-
-async def create_user(
-    conn: asyncpg.Connection,
-    *,
-    name: str,
-    email: str,
-    password_hash: str,
-    phone_number: Optional[str],
-    role: str,
-    supplier_id: Optional[str],
-    created_by: str,
-) -> UserRead:
-    user_id = str(uuid4())
-    row = await conn.fetchrow(
-        """
-        INSERT INTO users
-            (user_id, name, email, password_hash, phone_number,
-             role, supplier_id, is_active, created_by)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE, $8)
-        RETURNING user_id, name, email, role, supplier_id, is_active
-        """,
-        user_id,
-        name,
-        email,
-        password_hash,
-        phone_number,
-        role,
-        supplier_id,
-        created_by,
-    )
-    return UserRead(**dict(row))
-
-
-async def get_user_by_email(
-    conn: asyncpg.Connection, email: str
-) -> Optional[dict]:
-    """Return full user row (including password_hash) for login verification."""
-    row = await conn.fetchrow(
-        """
-        SELECT user_id, name, email, password_hash, role,
-               supplier_id, is_active
-        FROM   users
-        WHERE  email = $1 AND deleted = FALSE
-        """,
-        email,
-    )
-    return dict(row) if row else None
-
-
-async def get_user_by_id(
-    conn: asyncpg.Connection, user_id: str
-) -> Optional[UserRead]:
-    row = await conn.fetchrow(
-        """
-        SELECT user_id, name, email, role, supplier_id, is_active
-        FROM   users
-        WHERE  user_id = $1 AND deleted = FALSE
-        """,
-        user_id,
-    )
-    return UserRead(**dict(row)) if row else None

@@ -4,8 +4,9 @@ from fastapi import APIRouter, Depends, status
 import asyncpg
 
 from app.database import get_connection
-from app.core.dependencies import require_role
-from app.dto.auth import ApproveRequestBody, RegistrationRequestRead, UserRead
+from app.utils.dependencies import require_role
+from app.dto.auth import ApproveRequestBody, RegistrationRequestRead
+from app.dto.users import UserRead
 from app.controllers import admin as admin_controller
 
 router = APIRouter()

@@ -2,11 +2,13 @@ import secrets
 
 from fastapi import HTTPException
 import asyncpg
+from asyncpg.exceptions import UniqueViolationError
 
-from app.core.security import hash_password
-from app.core.email import send_credentials_email
-from app.dto.auth import ApproveRequestBody, RegistrationRequestRead, UserRead
-from app.repositories import auth_repo
+from app.utils.security import hash_password
+from app.utils.email import send_credentials_email
+from app.dto.auth import ApproveRequestBody, RegistrationRequestRead
+from app.dto.users import UserCreate, UserRead
+from app.repositories import auth_repo, users_repo
 
 
 async def list_pending_requests(conn: asyncpg.Connection) -> list[RegistrationRequestRead]:
@@ -25,16 +27,35 @@ async def approve_request(
     temp_password = secrets.token_urlsafe(12)
     hashed = hash_password(temp_password)
 
-    user = await auth_repo.create_user(
-        conn,
-        name=req.name,
-        email=req.email,
-        password_hash=hashed,
-        phone_number=req.phone,
-        role=body.role,
-        supplier_id=body.supplier_id,
-        created_by=current_user["user_id"],
-    )
+    existing_user = await users_repo.get_user_by_email(conn, req.email)
+    if existing_user:
+        await auth_repo.update_request_status(
+            conn, request_id, status="REJECTED", reviewed_by=current_user["user_id"]
+        )
+        raise HTTPException(
+            status_code=409,
+            detail=f"User with email {req.email} already exists",
+        )
+
+    try:
+        user = await users_repo.create_user(
+            conn,
+            data=UserCreate(
+                name=req.name,
+                email=req.email,
+                password=temp_password,
+                phone_number=req.phone,
+                role=body.role,
+                supplier_id=None,
+            ),
+            password_hash=hashed,
+            created_by=current_user["user_id"],
+        )
+    except UniqueViolationError:
+        raise HTTPException(
+            status_code=409,
+            detail=f"User with email {req.email} already exists",
+        )
 
     await auth_repo.update_request_status(
         conn, request_id, status="APPROVED", reviewed_by=current_user["user_id"]
