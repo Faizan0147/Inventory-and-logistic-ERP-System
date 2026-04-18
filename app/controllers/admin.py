@@ -46,7 +46,6 @@ async def approve_request(
                 password=temp_password,
                 phone_number=req.phone,
                 role=body.role,
-                supplier_id=None,
             ),
             password_hash=hashed,
             created_by=current_user["user_id"],

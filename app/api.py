@@ -1,6 +1,10 @@
 from fastapi import APIRouter
-from app.routes import supplier, auth, admin,category,warehouse,product,inventory,invoice,purchase_order,poi
-from app.routes import customers, supplier, auth, admin, user, invoice_items, customers, shipments
+from app.routes import (
+    supplier, auth, admin, user,
+    category, warehouse, product, inventory,
+    invoice, invoice_items, purchase_order, poi,
+    customers, shipments,
+)
 
 api_router = APIRouter()
 

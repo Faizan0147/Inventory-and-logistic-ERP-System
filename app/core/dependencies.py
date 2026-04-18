@@ -6,17 +6,18 @@ from typing import Annotated
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import ExpiredSignatureError, JWTError
+from jose import JWTError
 
 from app.utils.security import decode_access_token
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
+
 async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)],
 ) -> dict:
     """
-    Decode the JWT and return a dict with user_id and role.
+    Decode the JWT and return a dict with user_id, role, supplier_id.
     Raises 401 if token is invalid or expired.
     """
     credentials_exception = HTTPException(
@@ -24,7 +25,7 @@ async def get_current_user(
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    try:
+    try: 
         payload = decode_access_token(token)
         user_id: str | None = payload.get("sub")
         if user_id is None:
@@ -32,19 +33,10 @@ async def get_current_user(
         return {
             "user_id": user_id,
             "role": payload.get("role"),
+            "supplier_id": payload.get("supplier_id"),
         }
-    except ExpiredSignatureError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token expired. Please login again.",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
     except JWTError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token. Please login again.",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise credentials_exception
 
 
 def require_role(*allowed_roles: str):

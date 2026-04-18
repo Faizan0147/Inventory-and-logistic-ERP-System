@@ -27,7 +27,6 @@ async def login(conn: asyncpg.Connection, body: LoginRequest) -> TokenResponse:
         data={
             "sub": user["user_id"],
             "role": user["role"],
-            "supplier_id": user.get("supplier_id"),
         }
     )
     return TokenResponse(access_token=token)
