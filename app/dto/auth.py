@@ -38,12 +38,18 @@ class ApproveRequestBody(BaseModel):
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
-
+    
+class AuthUser(BaseModel):
+    user_id: str
+    name: str
+    email: str
+    role: str
+    supplier_id: Optional[str] = None
 
 class TokenResponse(BaseModel):
     access_token: str
+    user: AuthUser
     token_type: str = "bearer"
-
 
 # ── User DTOs ────────────────────────────────────────────────────────
 

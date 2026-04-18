@@ -8,6 +8,7 @@ from app.dto.auth import (
     RegistrationRequestRead,
     LoginRequest,
     TokenResponse,
+    AuthUser
 )
 from app.repositories import auth_repo, users_repo
 
@@ -29,4 +30,13 @@ async def login(conn: asyncpg.Connection, body: LoginRequest) -> TokenResponse:
             "role": user["role"],
         }
     )
-    return TokenResponse(access_token=token)
+    return TokenResponse(
+        access_token=token,
+        user=AuthUser(
+            user_id=str(user["user_id"]),
+            name=user["name"],
+            email=user["email"],
+            role=user["role"],
+            supplier_id=user.get("supplier_id"),
+        ),
+    )
