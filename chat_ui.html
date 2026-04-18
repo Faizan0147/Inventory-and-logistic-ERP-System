@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Warehouse ERP AI Console</title>
+  <style>
+    :root {
+      --bg: #f7f4ef;
+      --card: #fffdf9;
+      --ink: #1f2937;
+      --muted: #64748b;
+      --brand: #0f766e;
+      --brand-2: #0ea5a8;
+      --accent: #eab308;
+      --danger: #b91c1c;
+      --line: #d6d3d1;
+      --shadow: 0 16px 40px rgba(15, 23, 42, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", "Trebuchet MS", system-ui, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 8% 15%, rgba(14, 165, 168, 0.15), transparent 30%),
+        radial-gradient(circle at 90% 10%, rgba(234, 179, 8, 0.2), transparent 35%),
+        linear-gradient(120deg, #fefaf0 0%, #f0fdfa 100%);
+      display: grid;
+      place-items: center;
+      padding: 20px;
+    }
+
+    .shell {
+      width: min(1100px, 100%);
+      min-height: 82vh;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      animation: rise 0.5s ease;
+    }
+
+    @keyframes rise {
+      from { transform: translateY(18px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .sidebar {
+      background: linear-gradient(170deg, #0f766e 0%, #115e59 45%, #0b3b37 100%);
+      color: #ecfeff;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .brand {
+      font-size: 1.4rem;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+    }
+
+    .sub {
+      color: #ccfbf1;
+      line-height: 1.5;
+      font-size: 0.95rem;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      padding: 8px 12px;
+      border: 1px solid rgba(236, 254, 255, 0.35);
+      border-radius: 999px;
+      font-size: 0.8rem;
+      margin-top: 4px;
+    }
+
+    .content {
+      display: flex;
+      flex-direction: column;
+      min-height: 82vh;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--line);
+      background: #fff;
+    }
+
+    .title {
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+
+    .status {
+      font-size: 0.85rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: #9ca3af;
+    }
+
+    .dot.live {
+      background: #16a34a;
+      box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.2);
+    }
+
+    .panel {
+      padding: 20px;
+      display: none;
+      flex-direction: column;
+      gap: 14px;
+      height: 100%;
+    }
+
+    .panel.active {
+      display: flex;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px;
+      background: #fff;
+    }
+
+    .grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      font-size: 0.9rem;
+      color: #334155;
+      font-weight: 600;
+    }
+
+    input, textarea {
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font: inherit;
+      outline: none;
+      transition: border-color 0.2s ease;
+      background: #fff;
+    }
+
+    input:focus, textarea:focus {
+      border-color: var(--brand-2);
+    }
+
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s ease, opacity 0.2s ease;
+    }
+
+    button:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-1px);
+    }
+
+    .btn-primary {
+      color: #fff;
+      background: linear-gradient(110deg, var(--brand) 0%, var(--brand-2) 100%);
+    }
+
+    .btn-ghost {
+      color: #0f172a;
+      background: #f1f5f9;
+    }
+
+    .auth-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .error {
+      color: var(--danger);
+      font-size: 0.9rem;
+      min-height: 1.2rem;
+    }
+
+    .chat-wrap {
+      display: grid;
+      grid-template-rows: 1fr auto;
+      gap: 12px;
+      min-height: 0;
+      flex: 1;
+    }
+
+    .messages {
+      overflow: auto;
+      padding: 8px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: linear-gradient(180deg, #ffffff 0%, #fafaf9 100%);
+    }
+
+    .msg {
+      max-width: 85%;
+      margin: 10px 0;
+      padding: 11px 13px;
+      border-radius: 12px;
+      white-space: pre-wrap;
+      line-height: 1.45;
+      animation: fade 0.2s ease;
+    }
+
+    @keyframes fade {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .msg.user {
+      margin-left: auto;
+      background: #ccfbf1;
+      border: 1px solid #5eead4;
+    }
+
+    .msg.bot {
+      margin-right: auto;
+      background: #fff7ed;
+      border: 1px solid #fdba74;
+    }
+
+    .composer {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: end;
+    }
+
+    .note {
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    @media (max-width: 920px) {
+      .shell {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        padding: 18px;
+      }
+
+      .content {
+        min-height: 68vh;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand">Warehouse ERP AI Console</div>
+      <div class="sub">
+        Login once, then ask natural-language questions. The assistant can route to MCP tools for schema lookup and SQL operations.
+      </div>
+      <div class="pill">MCP-enabled Tool Calling</div>
+      <div class="pill">Role-aware SQL access</div>
+      <div class="pill">Session-scoped token auth</div>
+    </aside>
+
+    <main class="content">
+      <div class="topbar">
+        <div class="title">Data Assistant</div>
+        <div class="status"><span id="statusDot" class="dot"></span><span id="statusText">Not logged in</span></div>
+      </div>
+
+      <section id="loginPanel" class="panel active">
+        <div class="card">
+          <h3 style="margin-top:0">Sign in</h3>
+          <div class="grid">
+            <label>
+              Email
+              <input id="email" type="email" placeholder="you@company.com" autocomplete="username" />
+            </label>
+            <label>
+              Password
+              <input id="password" type="password" placeholder="Your password" autocomplete="current-password" />
+            </label>
+            <div class="auth-row">
+              <button id="loginBtn" class="btn-primary">Login</button>
+              <button id="clearBtn" class="btn-ghost" type="button">Clear</button>
+            </div>
+            <div id="authError" class="error"></div>
+            <div class="note">Token is used for API authorization and MCP-aware tool access.</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="chatPanel" class="panel">
+        <div class="chat-wrap">
+          <div id="messages" class="messages"></div>
+          <div>
+            <div class="composer">
+              <textarea id="prompt" rows="3" placeholder="Example: show all supplier tables and then fetch schema of users"></textarea>
+              <button id="sendBtn" class="btn-primary">Send</button>
+            </div>
+            <div class="auth-row" style="margin-top:10px;">
+              <button id="logoutBtn" class="btn-ghost" type="button">Logout</button>
+            </div>
+            <div class="note">The assistant can call MCP tools automatically when needed.</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const loginPanel = document.getElementById("loginPanel");
+    const chatPanel = document.getElementById("chatPanel");
+    const statusText = document.getElementById("statusText");
+    const statusDot = document.getElementById("statusDot");
+    const authError = document.getElementById("authError");
+    const messages = document.getElementById("messages");
+
+    let accessToken = "";
+
+    function setLoggedIn(loggedIn) {
+      loginPanel.classList.toggle("active", !loggedIn);
+      chatPanel.classList.toggle("active", loggedIn);
+      statusText.textContent = loggedIn ? "Authenticated" : "Not logged in";
+      statusDot.classList.toggle("live", loggedIn);
+    }
+
+    function addMessage(role, text) {
+      const node = document.createElement("div");
+      node.className = `msg ${role}`;
+      node.textContent = text;
+      messages.appendChild(node);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    async function login() {
+      authError.textContent = "";
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+
+      if (!email || !password) {
+        authError.textContent = "Email and password are required.";
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/v1/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          authError.textContent = data?.detail || "Login failed.";
+          return;
+        }
+
+        accessToken = data.access_token || "";
+        if (!accessToken) {
+          authError.textContent = "Login succeeded but no token returned.";
+          return;
+        }
+
+        setLoggedIn(true);
+        messages.innerHTML = "";
+        addMessage("bot", "You are connected. Ask anything about your warehouse database.");
+      } catch (err) {
+        authError.textContent = "Unable to reach server.";
+      }
+    }
+
+    async function sendPrompt() {
+      const box = document.getElementById("prompt");
+      const prompt = box.value.trim();
+      if (!prompt) return;
+
+      addMessage("user", prompt);
+      box.value = "";
+
+      try {
+        const res = await fetch("/api/v1/chat/message", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${accessToken}`
+          },
+          credentials: "include",
+          body: JSON.stringify({ prompt })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          addMessage("bot", data?.detail || "Chat request failed.");
+          return;
+        }
+
+        addMessage("bot", data.reply || "No response from assistant.");
+      } catch (err) {
+        addMessage("bot", "Network error: unable to call chat API.");
+      }
+    }
+
+    document.getElementById("loginBtn").addEventListener("click", login);
+    document.getElementById("clearBtn").addEventListener("click", () => {
+      document.getElementById("email").value = "";
+      document.getElementById("password").value = "";
+      authError.textContent = "";
+    });
+
+    document.getElementById("sendBtn").addEventListener("click", sendPrompt);
+    document.getElementById("prompt").addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendPrompt();
+      }
+    });
+
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      accessToken = "";
+      setLoggedIn(false);
+    });
+
+    setLoggedIn(false);
+  </script>
+</body>
+</html>
