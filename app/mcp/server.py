@@ -13,7 +13,7 @@ from typing import Optional
 
 from app.database import get_pool
 from app.mcp.auth import get_user_from_fastmcp_request
-from app.mcp.rac import apply_rac
+from app.mcp.query_checks import apply_query_checks
 from app.mcp.fetch_tables import fetch_tables
 from app.mcp.fetch_schema import get_table_schema
 from app.mcp.execute_query import execute_query
@@ -63,7 +63,7 @@ async def execute_sql_query(sql: str, params: Optional[list] = None) -> str:
         params = []
 
     try:
-        safe_sql, safe_params = apply_rac(sql, params, user)
+        safe_sql, safe_params = apply_query_checks(sql, params, user)
     except PermissionError as e:
         return json.dumps({"error": f"Access denied: {e}"})
 

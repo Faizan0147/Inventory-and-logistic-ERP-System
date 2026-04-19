@@ -126,6 +126,31 @@
       box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.2);
     }
 
+    .agent-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    .agent-toggle select {
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 5px 10px;
+      font: inherit;
+      font-size: 0.82rem;
+      background: #f8fafc;
+      color: var(--ink);
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+
+    .agent-toggle select:focus {
+      border-color: var(--brand-2);
+    }
+
     .panel {
       padding: 20px;
       display: none;
@@ -297,7 +322,16 @@
     <main class="content">
       <div class="topbar">
         <div class="title">Data Assistant</div>
-        <div class="status"><span id="statusDot" class="dot"></span><span id="statusText">Not logged in</span></div>
+        <div style="display:flex;align-items:center;gap:16px">
+          <div class="agent-toggle">
+            <label for="agentSelect">Agent:</label>
+            <select id="agentSelect">
+              <option value="custom">Custom Groq</option>
+              <option value="langchain">LangChain</option>
+            </select>
+          </div>
+          <div class="status"><span id="statusDot" class="dot"></span><span id="statusText">Not logged in</span></div>
+        </div>
       </div>
 
       <section id="loginPanel" class="panel active">
@@ -412,8 +446,13 @@
       addMessage("user", prompt);
       box.value = "";
 
+      const agent = document.getElementById("agentSelect").value;
+      const endpoint = agent === "langchain"
+        ? "/api/v1/langchain-chat/message"
+        : "/api/v1/chat/message";
+
       try {
-        const res = await fetch("/api/v1/chat/message", {
+        const res = await fetch(endpoint, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -430,7 +469,9 @@
           return;
         }
 
-        addMessage("bot", data.reply || "No response from assistant.");
+        const agentLabel = agent === "langchain" ? "[LangChain]" : "[Custom]";
+        addMessage("bot", `${agentLabel} ${data.reply || "No response from assistant."}`);
+
       } catch (err) {
         addMessage("bot", "Network error: unable to call chat API.");
       }
