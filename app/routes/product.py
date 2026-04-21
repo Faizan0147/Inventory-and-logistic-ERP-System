@@ -21,12 +21,13 @@ async def create_product(body: ProductCreate, conn: Conn, current_user: CurrentU
 
 @router.get("/", response_model=list[ProductRead])
 async def list_products(conn: Conn, current_user: CurrentUser, offset: int = 0, limit: int = 100):
-    return await product_controller.list_products(conn, offset, limit)
+    return await product_controller.list_products(conn, offset, limit, current_user=current_user)
 
 
 @router.get("/{product_id}", response_model=ProductRead)
 async def get_warehouse(product_id: str, conn: Conn, current_user: CurrentUser):
-    return await product_controller.get_product(conn, product_id)
+    return await product_controller.get_product(conn, product_id, current_user=current_user)
+
 
 
 @router.patch("/{product_id}", response_model=ProductRead)

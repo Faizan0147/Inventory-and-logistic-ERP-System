@@ -21,12 +21,13 @@ async def create_supplier(body: SupplierCreate, conn: Conn, current_user: Curren
 
 @router.get("/", response_model=list[SupplierRead])
 async def list_suppliers(conn: Conn, current_user: CurrentUser, offset: int = 0, limit: int = 100):
-    return await supplier_controller.list_suppliers(conn, offset, limit)
+    return await supplier_controller.list_suppliers(conn, offset, limit, current_user=current_user)
 
 
 @router.get("/{supplier_id}", response_model=SupplierRead)
 async def get_supplier(supplier_id: str, conn: Conn, current_user: CurrentUser):
-    return await supplier_controller.get_supplier(conn, supplier_id)
+    return await supplier_controller.get_supplier(conn, supplier_id, current_user=current_user)
+
 
 
 @router.patch("/{supplier_id}", response_model=SupplierRead)

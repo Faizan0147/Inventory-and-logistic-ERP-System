@@ -20,12 +20,13 @@ async def create_shipment(body: ShipmentCreate, conn: Conn, current_user: Curren
 
 @router.get("/", response_model=list[ShipmentRead])
 async def list_shipments(conn: Conn, current_user: CurrentUser, offset: int = 0, limit: int = 100):
-    return await shipment_controller.list_shipments(conn, offset, limit)
+    return await shipment_controller.list_shipments(conn, offset, limit, current_user=current_user)
 
 
 @router.get("/{shipment_id}", response_model=ShipmentRead)
 async def get_shipment(shipment_id: str, conn: Conn, current_user: CurrentUser):
-    return await shipment_controller.get_shipment(conn, shipment_id)
+    return await shipment_controller.get_shipment(conn, shipment_id, current_user=current_user)
+
 
 
 @router.patch("/{shipment_id}", response_model=ShipmentRead)

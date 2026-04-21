@@ -32,7 +32,9 @@ async def get_current_user(
         return {
             "user_id": user_id,
             "role": payload.get("role"),
+            "supplier_id": payload.get("supplier_id"),
         }
+
     except ExpiredSignatureError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

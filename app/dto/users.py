@@ -8,6 +8,8 @@ class UserCreate(BaseModel):
     password: str
     phone_number: Optional[str] = None
     role: str = "SUPPLIER"
+    supplier_id: Optional[str] = None
+
     
 class UserUpdate(BaseModel):
     name: Optional[str] = None
@@ -15,7 +17,9 @@ class UserUpdate(BaseModel):
     password: Optional[str] = None
     phone_number: Optional[str] = None
     role: Optional[str] = None
+    supplier_id: Optional[str] = None
     is_active: Optional[bool] = None
+
     
 
 class UserRead(BaseModel):
@@ -24,6 +28,7 @@ class UserRead(BaseModel):
     email: str
     phone_number: Optional[str] = None
     role: str
+    supplier_id: Optional[str] = None
     is_active: bool
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None

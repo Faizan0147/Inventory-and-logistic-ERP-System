@@ -25,17 +25,21 @@ async def create_invoice_item(
 
 
 async def get_invoice_item(
-    conn: asyncpg.Connection, invoice_item_id: str
+    conn: asyncpg.Connection, invoice_item_id: str, supplier_id: Optional[str] = None
 ) -> Optional[InvoiceItemRead]:
-    row = await conn.fetchrow(
-        """
-        SELECT invoice_item_id, invoice_id, product_id, quantity, price,
-               created_at, updated_at, created_by, updated_by
-        FROM invoice_items
-        WHERE invoice_item_id = $1 AND deleted = FALSE
-        """,
-        invoice_item_id,
-    )
+    query = """
+        SELECT ii.invoice_item_id, ii.invoice_id, ii.product_id, ii.quantity, ii.price,
+               ii.created_at, ii.updated_at, ii.created_by, ii.updated_by
+        FROM invoice_items ii
+        JOIN invoices i ON ii.invoice_id = i.invoice_id
+        WHERE ii.invoice_item_id = $1 AND ii.deleted = FALSE
+    """
+    params = [invoice_item_id]
+    if supplier_id:
+        query += " AND i.supplier_id = $2"
+        params.append(supplier_id)
+        
+    row = await conn.fetchrow(query, *params)
     return InvoiceItemRead(**dict(row)) if row else None
 
 
@@ -44,31 +48,29 @@ async def list_invoice_items(
     invoice_id: Optional[str] = None,
     offset: int = 0,
     limit: int = 100,
+    supplier_id: Optional[str] = None,
 ) -> list[InvoiceItemRead]:
+    query = """
+        SELECT ii.invoice_item_id, ii.invoice_id, ii.product_id, ii.quantity, ii.price,
+               ii.created_at, ii.updated_at, ii.created_by, ii.updated_by
+        FROM invoice_items ii
+        JOIN invoices i ON ii.invoice_id = i.invoice_id
+        WHERE ii.deleted = FALSE
+    """
+    params = [limit, offset]
+    
     if invoice_id:
-        rows = await conn.fetch(
-            """
-            SELECT invoice_item_id, invoice_id, product_id, quantity, price,
-                   created_at, updated_at, created_by, updated_by
-            FROM invoice_items
-            WHERE invoice_id = $1 AND deleted = FALSE
-            ORDER BY created_at
-            LIMIT $2 OFFSET $3
-            """,
-            invoice_id, limit, offset,
-        )
-    else:
-        rows = await conn.fetch(
-            """
-            SELECT invoice_item_id, invoice_id, product_id, quantity, price,
-                   created_at, updated_at, created_by, updated_by
-            FROM invoice_items
-            WHERE deleted = FALSE
-            ORDER BY created_at
-            LIMIT $1 OFFSET $2
-            """,
-            limit, offset,
-        )
+        query += " AND ii.invoice_id = $3"
+        params.append(invoice_id)
+    
+    if supplier_id:
+        supplier_param_index = len(params) + 1
+        query += f" AND i.supplier_id = ${supplier_param_index}"
+        params.append(supplier_id)
+        
+    query += " ORDER BY ii.created_at LIMIT $1 OFFSET $2"
+    
+    rows = await conn.fetch(query, *params)
     return [InvoiceItemRead(**dict(r)) for r in rows]
 
 
@@ -77,9 +79,9 @@ async def update_invoice_item(
     invoice_item_id: str,
     data: InvoiceItemUpdate,
     updated_by: Optional[str] = None,
+    supplier_id: Optional[str] = None,
 ) -> Optional[InvoiceItemRead]:
-    row = await conn.fetchrow(
-        """
+    query = """
         UPDATE invoice_items
         SET
             quantity   = COALESCE($1, quantity),
@@ -87,11 +89,16 @@ async def update_invoice_item(
             updated_by = $3,
             updated_at = CURRENT_TIMESTAMP
         WHERE invoice_item_id = $4 AND deleted = FALSE
-        RETURNING invoice_item_id, invoice_id, product_id, quantity, price,
-                  created_at, updated_at, created_by, updated_by
-        """,
-        data.quantity, data.price, updated_by, invoice_item_id,
-    )
+    """
+    params = [data.quantity, data.price, updated_by, invoice_item_id]
+    
+    if supplier_id:
+        query += " AND invoice_id IN (SELECT invoice_id FROM invoices WHERE supplier_id = $5)"
+        params.append(supplier_id)
+        
+    query += " RETURNING invoice_item_id, invoice_id, product_id, quantity, price, created_at, updated_at, created_by, updated_by"
+    
+    row = await conn.fetchrow(query, *params)
     return InvoiceItemRead(**dict(row)) if row else None
 
 
@@ -99,13 +106,18 @@ async def delete_invoice_item(
     conn: asyncpg.Connection,
     invoice_item_id: str,
     deleted_by: Optional[str] = None,
+    supplier_id: Optional[str] = None,
 ) -> bool:
-    result = await conn.execute(
-        """
+    query = """
         UPDATE invoice_items
         SET deleted = TRUE, updated_at = CURRENT_TIMESTAMP, updated_by = $2
         WHERE invoice_item_id = $1 AND deleted = FALSE
-        """,
-        invoice_item_id, deleted_by,
-    )
-    return result == "UPDATE 1"
+    """
+    params = [invoice_item_id, deleted_by]
+    
+    if supplier_id:
+        query += " AND invoice_id IN (SELECT invoice_id FROM invoices WHERE supplier_id = $3)"
+        params.append(supplier_id)
+        
+    result = await conn.execute(query, *params)
+    return result == "UPDATE 1"

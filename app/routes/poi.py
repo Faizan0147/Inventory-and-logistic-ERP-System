@@ -20,12 +20,13 @@ async def create_po_item(body: POItemCreate, conn: Conn, current_user: CurrentUs
 
 @router.get("/{po_id}/items", response_model=list[POItemRead])
 async def list_po_items(po_id: str, conn: Conn, current_user: CurrentUser):
-    return await poi.list_po_items(conn, po_id)
+    return await poi.list_po_items(conn, po_id, current_user=current_user)
 
 
 @router.get("/{po_id}/items/{po_item_id}", response_model=POItemRead)
 async def get_po_item(po_item_id: str, conn: Conn, current_user: CurrentUser):
-    return await poi.get_po_item(conn, po_item_id)
+    return await poi.get_po_item(conn, po_item_id, current_user=current_user)
+
 
 
 @router.patch("/{po_id}/items/{po_item_id}", response_model=POItemRead)

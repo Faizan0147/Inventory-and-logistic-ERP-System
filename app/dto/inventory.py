@@ -9,6 +9,8 @@ class InventoryCreate(BaseModel):
     quantity: int = 0
     reorder_level: Optional[int] = 0
     last_restocked: Optional[datetime] = None
+    supplier_id: str # Required for RBAC
+
 
 
 class InventoryUpdate(BaseModel):
@@ -26,6 +28,8 @@ class InventoryRead(BaseModel):
     quantity: int
     reorder_level: Optional[int] = None
     last_restocked: Optional[datetime] = None
+    supplier_id: str
+
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     created_by: Optional[str] = None

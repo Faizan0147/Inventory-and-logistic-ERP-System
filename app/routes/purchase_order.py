@@ -21,12 +21,13 @@ async def create_purchase_order(body: PurchaseOrderCreate, conn: Conn, current_u
 
 @router.get("/", response_model=list[PurchaseOrderRead])
 async def list_purchase_orders(conn: Conn, current_user: CurrentUser, offset: int = 0, limit: int = 100):
-    return await purchase_order_controller.list_purchase_orders(conn, offset, limit)
+    return await purchase_order_controller.list_purchase_orders(conn, offset, limit, current_user=current_user)
 
 
 @router.get("/{po_id}", response_model=PurchaseOrderRead)
 async def get_purchase_order(po_id: str, conn: Conn, current_user: CurrentUser):
-    return await purchase_order_controller.get_purchase_order(conn, po_id)
+    return await purchase_order_controller.get_purchase_order(conn, po_id, current_user=current_user)
+
 
 
 @router.patch("/{po_id}", response_model=PurchaseOrderRead)

@@ -11,6 +11,8 @@ class ShipmentCreate(BaseModel):
     shipment_date: Optional[date] = None
     estimated_arrival: Optional[date] = None
     status: Optional[str] = None
+    supplier_id: str # Required for RBAC
+
 
 
 class ShipmentUpdate(BaseModel):
@@ -26,6 +28,8 @@ class ShipmentUpdate(BaseModel):
 class ShipmentRead(BaseModel):
     shipment_id: str
     po_id: str
+    supplier_id: str
+
     warehouse_id: Optional[str] = None
     carrier_name: Optional[str] = None
     tracking_number: Optional[str] = None

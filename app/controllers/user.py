@@ -16,16 +16,21 @@ async def create_user(
 
 
 async def list_users(
-    conn: asyncpg.Connection, offset: int, limit: int) -> list[UserRead]:
-    return await users_repo.list_users(conn, offset, limit)
+    conn: asyncpg.Connection, offset: int, limit: int, current_user: dict) -> list[UserRead]:
+    # SUPPLIER can only see users of their own company
+    supplier_id = current_user["supplier_id"] if current_user["role"] == "SUPPLIER" else None
+    return await users_repo.list_users(conn, offset, limit, supplier_id=supplier_id)
 
 
 async def get_user(
-    conn: asyncpg.Connection, user_id: str) -> UserRead:
-    user = await users_repo.get_user(conn, user_id)
+    conn: asyncpg.Connection, user_id: str, current_user: dict) -> UserRead:
+    # SUPPLIER can only see users of their own company
+    supplier_id = current_user["supplier_id"] if current_user["role"] == "SUPPLIER" else None
+    user = await users_repo.get_user(conn, user_id, supplier_id=supplier_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
+
 
 
 async def update_user(

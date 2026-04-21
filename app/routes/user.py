@@ -28,7 +28,7 @@ async def create_user(body: UserCreate, conn: Conn, current_user: CurrentUser):
     dependencies=[Depends(require_role("SUPERADMIN"))],
 )
 async def list_users(conn: Conn, current_user: CurrentUser, offset: int = 0, limit: int = 100):
-    return await user_controller.list_users(conn, offset, limit)
+    return await user_controller.list_users(conn, offset, limit, current_user=current_user)
 
 
 @router.get("/{user_id}", 
@@ -36,7 +36,8 @@ async def list_users(conn: Conn, current_user: CurrentUser, offset: int = 0, lim
     dependencies=[Depends(require_role("SUPERADMIN"))],
 )
 async def get_user(user_id: str, conn: Conn, current_user: CurrentUser):
-    return await user_controller.get_user(conn, user_id)
+    return await user_controller.get_user(conn, user_id, current_user=current_user)
+
 
 
 @router.patch("/{user_id}", response_model=UserRead)

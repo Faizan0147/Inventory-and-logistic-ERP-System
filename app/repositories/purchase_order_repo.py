@@ -23,43 +23,48 @@ async def create_purchase_order(
     return PurchaseOrderRead(**dict(row))
 
 
-async def get_purchase_order(conn: asyncpg.Connection, po_id: str) -> Optional[PurchaseOrderRead]:
-    row = await conn.fetchrow(
-        """
+async def get_purchase_order(conn: asyncpg.Connection, po_id: str, supplier_id: Optional[str] = None) -> Optional[PurchaseOrderRead]:
+    query = """
         SELECT po_id, supplier_id, warehouse_id, order_number, order_date, expected_delivery,
                total_amount, status, created_at, updated_at, created_by, updated_by
         FROM purchase_orders
         WHERE po_id = $1 AND deleted = FALSE
-        """,
-        po_id,
-    )
+    """
+    params = [po_id]
+    if supplier_id:
+        query += " AND supplier_id = $2"
+        params.append(supplier_id)
+        
+    row = await conn.fetchrow(query, *params)
     if not row:
         return None
     return PurchaseOrderRead(**dict(row))
 
 
 async def list_purchase_orders(
-    conn: asyncpg.Connection, offset: int = 0, limit: int = 100
+    conn: asyncpg.Connection, offset: int = 0, limit: int = 100, supplier_id: Optional[str] = None
 ) -> list[PurchaseOrderRead]:
-    rows = await conn.fetch(
-        """
+    query = """
         SELECT po_id, supplier_id, warehouse_id, order_number, order_date, expected_delivery,
                total_amount, status, created_at, updated_at, created_by, updated_by
         FROM purchase_orders
         WHERE deleted = FALSE
-        ORDER BY order_date DESC
-        LIMIT $1 OFFSET $2
-        """,
-        limit, offset,
-    )
+    """
+    params = [limit, offset]
+    if supplier_id:
+        query += " AND supplier_id = $3"
+        params.append(supplier_id)
+        
+    query += " ORDER BY order_date DESC LIMIT $1 OFFSET $2"
+    
+    rows = await conn.fetch(query, *params)
     return [PurchaseOrderRead(**dict(r)) for r in rows]
 
 
 async def update_purchase_order(
-    conn: asyncpg.Connection, po_id: str, data: PurchaseOrderUpdate, updated_by: Optional[str] = None
+    conn: asyncpg.Connection, po_id: str, data: PurchaseOrderUpdate, updated_by: Optional[str] = None, supplier_id: Optional[str] = None
 ) -> Optional[PurchaseOrderRead]:
-    row = await conn.fetchrow(
-        """
+    query = """
         UPDATE purchase_orders
         SET
             supplier_id = COALESCE($1, supplier_id),
@@ -72,24 +77,34 @@ async def update_purchase_order(
             updated_by = $8,
             updated_at = CURRENT_TIMESTAMP
         WHERE po_id = $9 AND deleted = FALSE
-        RETURNING po_id, supplier_id, warehouse_id, order_number, order_date, expected_delivery,
-                  total_amount, status, created_at, updated_at, created_by, updated_by
-        """,
+    """
+    params = [
         data.supplier_id, data.warehouse_id, data.order_number, data.order_date,
-        data.expected_delivery, data.total_amount, data.status, updated_by, po_id,
-    )
+        data.expected_delivery, data.total_amount, data.status, updated_by, po_id
+    ]
+    if supplier_id:
+        query = query.replace("WHERE po_id = $9", "WHERE po_id = $9 AND supplier_id = $10")
+        params.append(supplier_id)
+
+    query += " RETURNING po_id, supplier_id, warehouse_id, order_number, order_date, expected_delivery, total_amount, status, created_at, updated_at, created_by, updated_by"
+    
+    row = await conn.fetchrow(query, *params)
     return PurchaseOrderRead(**dict(row)) if row else None
 
 
 async def delete_purchase_order(
-    conn: asyncpg.Connection, po_id: str, deleted_by: Optional[str] = None
+    conn: asyncpg.Connection, po_id: str, deleted_by: Optional[str] = None, supplier_id: Optional[str] = None
 ) -> bool:
-    result = await conn.execute(
-        """
+    query = """
         UPDATE purchase_orders
         SET deleted = TRUE, updated_at = CURRENT_TIMESTAMP, updated_by = $2
         WHERE po_id = $1 AND deleted = FALSE
-        """,
-        po_id, deleted_by,
-    )
+    """
+    params = [po_id, deleted_by]
+    if supplier_id:
+        query += " AND supplier_id = $3"
+        params.append(supplier_id)
+        
+    result = await conn.execute(query, *params)
     return result == "UPDATE 1"
+

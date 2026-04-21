@@ -26,12 +26,13 @@ async def list_invoice_items(
     offset: int = 0,
     limit: int = 100,
 ):
-    return await invoice_item_controller.list_invoice_items(conn, invoice_id, offset, limit)
+    return await invoice_item_controller.list_invoice_items(conn, invoice_id, offset, limit, current_user=current_user)
 
 
 @router.get("/{invoice_item_id}", response_model=InvoiceItemRead)
 async def get_invoice_item(invoice_item_id: str, conn: Conn, current_user: CurrentUser):
-    return await invoice_item_controller.get_invoice_item(conn, invoice_item_id)
+    return await invoice_item_controller.get_invoice_item(conn, invoice_item_id, current_user=current_user)
+
 
 
 @router.patch("/{invoice_item_id}", response_model=InvoiceItemRead)

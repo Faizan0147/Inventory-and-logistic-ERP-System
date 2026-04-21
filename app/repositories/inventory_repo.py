@@ -14,54 +14,59 @@ async def create_inventory(
 ) -> InventoryRead:
     row = await conn.fetchrow(
         """
-        INSERT INTO inventory (inventory_id, product_id, warehouse_id, quantity, reorder_level, last_restocked, created_by, updated_by)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $7)
-        RETURNING inventory_id, product_id, warehouse_id, quantity, reorder_level, last_restocked,
+        INSERT INTO inventory (inventory_id, product_id, warehouse_id, quantity, reorder_level, last_restocked, supplier_id, created_by, updated_by)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $8)
+        RETURNING inventory_id, product_id, warehouse_id, quantity, reorder_level, last_restocked, supplier_id,
                   created_at, updated_at, created_by, updated_by
         """,
         str(uuid4()), data.product_id, data.warehouse_id,
-        data.quantity, data.reorder_level, data.last_restocked, created_by,
+        data.quantity, data.reorder_level, data.last_restocked, data.supplier_id, created_by,
     )
     return InventoryRead(**dict(row))
 
 
-async def get_inventory(conn: asyncpg.Connection, inventory_id: str) -> Optional[InventoryRead]:
-    row = await conn.fetchrow(
-        """
-        SELECT inventory_id, product_id, warehouse_id, quantity, reorder_level, last_restocked, created_by, updated_by,
-               created_at, updated_at
+async def get_inventory(conn: asyncpg.Connection, inventory_id: str, supplier_id: Optional[str] = None) -> Optional[InventoryRead]:
+    query = """
+        SELECT inventory_id, product_id, warehouse_id, quantity, reorder_level, last_restocked, supplier_id,
+               created_at, updated_at, created_by, updated_by
         FROM inventory
         WHERE inventory_id = $1 AND deleted = FALSE
-        """,
-        inventory_id,
-    )
+    """
+    params = [inventory_id]
+    if supplier_id:
+        query += " AND supplier_id = $2"
+        params.append(supplier_id)
+        
+    row = await conn.fetchrow(query, *params)
     if not row:
         return None
     return InventoryRead(**dict(row))
 
 
 async def list_inventory(
-    conn: asyncpg.Connection, offset: int = 0, limit: int = 100
+    conn: asyncpg.Connection, offset: int = 0, limit: int = 100, supplier_id: Optional[str] = None
 ) -> list[InventoryRead]:
-    rows = await conn.fetch(
-        """
-        SELECT inventory_id, product_id, warehouse_id, quantity, reorder_level, last_restocked, created_by, updated_by,
-               created_at, updated_at
+    query = """
+        SELECT inventory_id, product_id, warehouse_id, quantity, reorder_level, last_restocked, supplier_id,
+               created_at, updated_at, created_by, updated_by
         FROM inventory
         WHERE deleted = FALSE
-        ORDER BY quantity
-        LIMIT $1 OFFSET $2
-        """,
-        limit, offset,
-    )
+    """
+    params = [limit, offset]
+    if supplier_id:
+        query += " AND supplier_id = $3"
+        params.append(supplier_id)
+        
+    query += " ORDER BY quantity LIMIT $1 OFFSET $2"
+    
+    rows = await conn.fetch(query, *params)
     return [InventoryRead(**dict(r)) for r in rows]
 
 
 async def update_inventory(
-    conn: asyncpg.Connection, inventory_id: str, data: InventoryUpdate, updated_by: Optional[str] = None
+    conn: asyncpg.Connection, inventory_id: str, data: InventoryUpdate, updated_by: Optional[str] = None, supplier_id: Optional[str] = None
 ) -> Optional[InventoryRead]:
-    row = await conn.fetchrow(
-        """
+    query = """
         UPDATE inventory
         SET
             product_id = COALESCE($1, product_id),
@@ -72,24 +77,33 @@ async def update_inventory(
             updated_by = $6,
             updated_at = CURRENT_TIMESTAMP
         WHERE inventory_id = $7 AND deleted = FALSE
-        RETURNING inventory_id, product_id, warehouse_id, quantity, reorder_level, last_restocked,
-                  created_at, updated_at, created_by, updated_by
-        """,
+    """
+    params = [
         data.product_id, data.warehouse_id, data.quantity,
-        data.reorder_level, data.last_restocked, updated_by, inventory_id,
-    )
+        data.reorder_level, data.last_restocked, updated_by, inventory_id
+    ]
+    if supplier_id:
+        query = query.replace("WHERE inventory_id = $7", "WHERE inventory_id = $7 AND supplier_id = $8")
+        params.append(supplier_id)
+        
+    query += " RETURNING inventory_id, product_id, warehouse_id, quantity, reorder_level, last_restocked, supplier_id, created_at, updated_at, created_by, updated_by"
+    
+    row = await conn.fetchrow(query, *params)
     return InventoryRead(**dict(row)) if row else None
 
 
 async def delete_inventory(
-    conn: asyncpg.Connection, inventory_id: str, deleted_by: Optional[str] = None
+    conn: asyncpg.Connection, inventory_id: str, deleted_by: Optional[str] = None, supplier_id: Optional[str] = None
 ) -> bool:
-    result = await conn.execute(
-        """
+    query = """
         UPDATE inventory
         SET deleted = TRUE, updated_at = CURRENT_TIMESTAMP, updated_by = $2
         WHERE inventory_id = $1 AND deleted = FALSE
-        """,
-        inventory_id, deleted_by,
-    )
-    return result == "UPDATE 1"
+    """
+    params = [inventory_id, deleted_by]
+    if supplier_id:
+        query += " AND supplier_id = $3"
+        params.append(supplier_id)
+        
+    result = await conn.execute(query, *params)
+    return result == "UPDATE 1"

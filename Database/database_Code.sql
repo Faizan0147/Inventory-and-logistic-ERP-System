@@ -59,8 +59,11 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_by TEXT,
     updated_by TEXT,
+    supplier_id TEXT, -- Added for RBAC: links a SUPPLIER user to their company
 
-    deleted BOOLEAN NOT NULL DEFAULT FALSE
+    deleted BOOLEAN NOT NULL DEFAULT FALSE,
+
+    FOREIGN KEY (supplier_id) REFERENCES suppliers(supplier_id)
 );
 
 CREATE TABLE IF NOT EXISTS suppliers (
@@ -189,6 +192,7 @@ CREATE TABLE IF NOT EXISTS inventory (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_by TEXT,
     updated_by TEXT,
+    supplier_id TEXT NOT NULL, -- Added for RBAC: direct ownership for faster filtering
 
     deleted BOOLEAN NOT NULL DEFAULT FALSE,
 
@@ -196,6 +200,9 @@ CREATE TABLE IF NOT EXISTS inventory (
 
     FOREIGN KEY (product_id)
         REFERENCES products(product_id)
+        ON DELETE CASCADE,
+    FOREIGN KEY (supplier_id)                    -- Added for RBAC
+        REFERENCES suppliers(supplier_id)
         ON DELETE CASCADE,
     FOREIGN KEY (warehouse_id)
         REFERENCES warehouses(warehouse_id)
@@ -361,11 +368,15 @@ CREATE TABLE IF NOT EXISTS shipments (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_by TEXT,
     updated_by TEXT,
+    supplier_id TEXT NOT NULL, -- Added for RBAC: direct ownership for faster filtering
 
     deleted BOOLEAN NOT NULL DEFAULT FALSE,
 
     FOREIGN KEY (po_id)
         REFERENCES purchase_orders(po_id)
+        ON DELETE CASCADE,
+    FOREIGN KEY (supplier_id)                    -- Added for RBAC
+        REFERENCES suppliers(supplier_id)
         ON DELETE CASCADE,
     FOREIGN KEY (warehouse_id)
         REFERENCES warehouses(warehouse_id)
@@ -406,6 +417,11 @@ CREATE INDEX IF NOT EXISTS idx_customer_name        ON customers(customer_name);
 CREATE INDEX IF NOT EXISTS idx_po_date              ON purchase_orders(order_date);
 CREATE INDEX IF NOT EXISTS idx_invoice_date         ON invoices(invoice_date);
 CREATE INDEX IF NOT EXISTS idx_shipment_date        ON shipments(shipment_date);
+
+-- RBAC indexes (added for performance)
+CREATE INDEX IF NOT EXISTS idx_inventory_supplier   ON inventory(supplier_id);
+CREATE INDEX IF NOT EXISTS idx_shipment_supplier    ON shipments(supplier_id);
+CREATE INDEX IF NOT EXISTS idx_user_supplier        ON users(supplier_id);
 
 -- Composite indexes (aggregation queries: SUM/COUNT/GROUP BY)
 CREATE INDEX IF NOT EXISTS idx_invoice_date_status  ON invoices(invoice_date, status);
