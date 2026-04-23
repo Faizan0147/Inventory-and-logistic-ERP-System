@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from starlette.requests import Request
 
+
 from app.database import create_pool, close_pool
 from app.api import api_router
 from app.mcp.server import mcp            # the FastMCP instance
@@ -28,8 +29,8 @@ app = FastAPI(
 # ── CORS — allow your frontend origin(s) to reach the API + MCP SSE ────
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],           # restrict to your domain in production
-    allow_credentials=True,        # allows cookies to be sent cross-origin
+    allow_origins=["http://localhost:3000", "https://godaamx.vercel.app/"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
