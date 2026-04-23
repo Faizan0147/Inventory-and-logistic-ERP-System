@@ -9,7 +9,7 @@ class ProductCreate(BaseModel):
     category_id: Optional[str] = None
     product_name: str
     description: Optional[str] = None
-    sku: str                                     # NOT NULL UNIQUE in schema
+    sku: str  
     price: Optional[Decimal] = None
     cost_price: Optional[Decimal] = None
     weight: Optional[Decimal] = None

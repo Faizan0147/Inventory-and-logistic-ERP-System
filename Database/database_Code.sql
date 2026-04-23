@@ -128,23 +128,19 @@ CREATE TABLE IF NOT EXISTS products (
 
 CREATE TABLE IF NOT EXISTS inventory (
     inventory_id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL, 
     product_id TEXT NOT NULL,
     warehouse_id TEXT NOT NULL,
-
-    quantity INT NOT NULL DEFAULT 0 CHECK (quantity >= 0),  -- [9] prevent negative stock
+    quantity INT NOT NULL DEFAULT 0 CHECK (quantity >= 0)
     reorder_level INT DEFAULT 0,
     last_restocked TIMESTAMP,
-
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_by TEXT,
-    updated_by TEXT,
-    user_id TEXT NOT NULL,                       -- [14] RBAC: owner of this inventory record
-
+    updated_by TEXT,   
     deleted BOOLEAN NOT NULL DEFAULT FALSE,
 
-    UNIQUE (product_id, warehouse_id),           -- [5] prevent duplicate inventory rows
-
+    UNIQUE (product_id, warehouse_id),     
     FOREIGN KEY (product_id)
         REFERENCES products(product_id)
         ON DELETE CASCADE,
@@ -288,50 +284,48 @@ CREATE TABLE IF NOT EXISTS invoice_items (
 );
 
 CREATE TABLE IF NOT EXISTS customers (
-    customer_id TEXT PRIMARY KEY,
-    customer_name VARCHAR(150) NOT NULL,
-    contact_person VARCHAR(100),
-    phone VARCHAR(20),
-    email VARCHAR(100) UNIQUE,                   -- [7] prevent duplicate customers
-    address TEXT,
-    customer_type VARCHAR(20) CHECK (customer_type IN ('Individual', 'Business')) DEFAULT 'Business',
+    customer_id     TEXT PRIMARY KEY,
+    user_id         TEXT NOT NULL,
+    customer_name   VARCHAR(150) NOT NULL,
+    contact_person  VARCHAR(100),
+    phone           VARCHAR(20),
+    email           VARCHAR(100) UNIQUE,
+    address         TEXT,
+    customer_type   VARCHAR(20) CHECK (customer_type IN ('Individual', 'Business')) DEFAULT 'Business',
 
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    created_by TEXT,
-    updated_by TEXT,
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_by      TEXT,
+    updated_by      TEXT,
+    deleted         BOOLEAN NOT NULL DEFAULT FALSE,
 
-    deleted BOOLEAN NOT NULL DEFAULT FALSE,
-
-    FOREIGN KEY (created_by)
-        REFERENCES users(user_id),
-    FOREIGN KEY (updated_by)
-        REFERENCES users(user_id)
+    FOREIGN KEY (user_id)     REFERENCES users(user_id),
+    FOREIGN KEY (created_by)  REFERENCES users(user_id),
+    FOREIGN KEY (updated_by)  REFERENCES users(user_id)
 );
-
 CREATE TABLE IF NOT EXISTS shipments (
     shipment_id TEXT PRIMARY KEY,
-    po_id TEXT NOT NULL,
+    purchase_order_id TEXT NOT NULL,
     warehouse_id TEXT,
-    carrier_name VARCHAR(100),
-    tracking_number VARCHAR(100) UNIQUE,         -- [6] prevent duplicate tracking numbers
+    user_id TEXT NOT NULL,
+    carrier_name VARCHAR(100) CHECK (carrier_name IN (
+        'DHL', 'FedEx', 'UPS', 'Aramex'
+    )),
+    tracking_number VARCHAR(100) UNIQUE,
     shipment_date DATE,
     estimated_arrival DATE,
     actual_arrival DATE,
-    status VARCHAR(20) CHECK (status IN           -- [4] constrain valid statuses
-        ('Pending', 'In Transit', 'Delivered', 'Returned', 'Cancelled')
-    ),
-
+    status VARCHAR(20) CHECK (status IN (
+        'Pending', 'In Transit', 'Delivered', 'Returned', 'Cancelled'
+    )),
+    notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_by TEXT,
     updated_by TEXT,
-    user_id TEXT NOT NULL,                       -- [14] RBAC: owner of this shipment
-
     deleted BOOLEAN NOT NULL DEFAULT FALSE,
-
-    FOREIGN KEY (po_id)
-        REFERENCES purchase_orders(po_id)
+    FOREIGN KEY (purchase_order_id)
+        REFERENCES purchase_orders(purchase_order_id)
         ON DELETE CASCADE,
     FOREIGN KEY (warehouse_id)
         REFERENCES warehouses(warehouse_id)
@@ -343,7 +337,6 @@ CREATE TABLE IF NOT EXISTS shipments (
     FOREIGN KEY (updated_by)
         REFERENCES users(user_id)
 );
-
 -- Foreign key indexes (required for JOIN performance)
 CREATE INDEX IF NOT EXISTS idx_products_supplier    ON products(supplier_id);
 CREATE INDEX IF NOT EXISTS idx_products_category    ON products(category_id);

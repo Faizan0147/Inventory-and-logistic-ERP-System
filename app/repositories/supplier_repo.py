@@ -1,4 +1,5 @@
 from uuid import uuid4
+import logging
 from typing import Optional
 import asyncpg
 
@@ -7,6 +8,11 @@ from app.dto.supplier import (
     SupplierUpdate,
     SupplierRead,
 )
+
+
+logger = logging.getLogger(__name__)
+
+
 async def create_supplier(
     conn: asyncpg.Connection,
     data: SupplierCreate,
@@ -36,9 +42,17 @@ async def create_supplier(
             created_by,
         )
         return SupplierRead(**dict(row))
+
     except asyncpg.UniqueViolationError:
+        logger.warning("create_supplier: duplicate email '%s'", data.contact_email)
         raise ValueError("A supplier with this email already exists.")
+        
+    except asyncpg.ForeignKeyViolationError as e:
+        logger.warning("create_supplier: foreign key violation — %s", e)
+        raise ValueError("Invalid user_id.")
+
     except asyncpg.PostgresError as e:
+        logger.error("create_supplier: database error — %s", e)
         raise RuntimeError(f"Database error while creating supplier: {e}")
 
 async def get_supplier(
@@ -46,6 +60,7 @@ async def get_supplier(
     supplier_id: str,
     user_id: Optional[str] = None,
     ) -> Optional[SupplierRead]:
+
     try:
         query = """
             SELECT supplier_id, user_id, supplier_name, contact_email,
@@ -55,6 +70,7 @@ async def get_supplier(
             WHERE supplier_id = $1
             AND deleted = FALSE
         """
+
         params = [supplier_id]
         if user_id:
             query += " AND user_id = $2"
@@ -63,8 +79,11 @@ async def get_supplier(
         row = await conn.fetchrow(query, *params)
         if not row:
             return None
+
         return SupplierRead(**dict(row))
+        
     except asyncpg.PostgresError as e:
+        logger.error("get_supplier(%s): database error — %s", supplier_id, e)
         raise RuntimeError(f"Database error while fetching supplier: {e}")
 
 async def list_suppliers(
@@ -73,6 +92,7 @@ async def list_suppliers(
     limit: int = 100,
     user_id: Optional[str] = None,
     ) -> list[SupplierRead]:
+
     try:
         query = """
             SELECT supplier_id, user_id, supplier_name, contact_email,
@@ -81,6 +101,7 @@ async def list_suppliers(
             FROM suppliers
             WHERE deleted = FALSE
         """
+
         params = [limit, offset]
         if user_id:
             query += " AND user_id = $3"
@@ -91,6 +112,7 @@ async def list_suppliers(
         return [SupplierRead(**dict(r)) for r in rows]
         
     except asyncpg.PostgresError as e:
+        logger.error("list_suppliers: database error — %s", e)
         raise RuntimeError(f"Database error while listing suppliers: {e}")
 
 async def update_supplier(
@@ -100,6 +122,7 @@ async def update_supplier(
     updated_by: Optional[str] = None,
     user_id: Optional[str] = None,
     ) -> Optional[SupplierRead]:
+    
     try:
         row = await conn.fetchrow(
             """
@@ -129,7 +152,13 @@ async def update_supplier(
             user_id,
         )
         return SupplierRead(**dict(row)) if row else None
+        
+    except asyncpg.UniqueViolationError:
+        logger.warning("update_supplier(%s): duplicate email '%s'", supplier_id, data.contact_email)
+        raise ValueError("A supplier with this email already exists.")
+
     except asyncpg.PostgresError as e:
+        logger.error("update_supplier(%s): database error — %s", supplier_id, e)
         raise RuntimeError(f"Database error while updating supplier: {e}")
 
 async def delete_supplier(
@@ -138,6 +167,7 @@ async def delete_supplier(
     deleted_by: Optional[str] = None,
     user_id: Optional[str] = None,
     ) -> bool:
+
     try:
         result = await conn.execute(
             """
@@ -152,5 +182,7 @@ async def delete_supplier(
             user_id,
         )
         return result == "UPDATE 1"
+    
     except asyncpg.PostgresError as e:
+        logger.error("delete_supplier(%s): database error — %s", supplier_id, e)
         raise RuntimeError(f"Database error while deleting supplier: {e}")

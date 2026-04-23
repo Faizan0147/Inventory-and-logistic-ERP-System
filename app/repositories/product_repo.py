@@ -69,7 +69,7 @@ async def get_product(
                    sku, price, cost_price, weight, status,
                    user_id, created_at, updated_at, created_by, updated_by
             FROM products
-            WHERE product_id = $1 AND deleted = FALSE
+            WHERE product_id = $1 AND deleted = FALSE 
         """
         params = [product_id]
         if user_id:

@@ -1,6 +1,8 @@
-from typing import Optional
+from typing import Optional, Literal
 from datetime import datetime
 from pydantic import BaseModel
+
+CustomerType = Literal["Individual", "Business"]
 
 
 class CustomerCreate(BaseModel):
@@ -9,7 +11,7 @@ class CustomerCreate(BaseModel):
     phone: Optional[str] = None
     email: Optional[str] = None
     address: Optional[str] = None
-    customer_type: str = "Business"  # "Individual" or "Business"
+    customer_type: CustomerType = "Business"
 
 
 class CustomerUpdate(BaseModel):
@@ -18,11 +20,12 @@ class CustomerUpdate(BaseModel):
     phone: Optional[str] = None
     email: Optional[str] = None
     address: Optional[str] = None
-    customer_type: Optional[str] = None
+    customer_type: Optional[CustomerType] = None
 
 
 class CustomerRead(BaseModel):
     customer_id: str
+    user_id: str
     customer_name: str
     contact_person: Optional[str] = None
     phone: Optional[str] = None
