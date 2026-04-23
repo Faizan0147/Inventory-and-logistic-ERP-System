@@ -19,6 +19,8 @@ async def register(conn: asyncpg.Connection, body: RegistrationRequestCreate) ->
 
 async def login(conn: asyncpg.Connection, body: LoginRequest) -> TokenResponse:
     user = await users_repo.get_user_by_email(conn, body.email)
+    print(body.email)
+    print(body.password)
     if not user or not verify_password(body.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Invalid email or password")
     if not user["is_active"]:
@@ -37,6 +39,6 @@ async def login(conn: asyncpg.Connection, body: LoginRequest) -> TokenResponse:
             name=user["name"],
             email=user["email"],
             role=user["role"],
-            supplier_id=user.get("supplier_id"),
+            # supplier_id=user.get("supplier_id"),
         ),
     )

@@ -1,33 +1,18 @@
 """
-LangChain tool wrappers around the existing MCP tools.
+LangChain tool wrappers for database access.
 
-Each tool calls mcp.call_tool() in-process — identical to the custom agent,
-but wrapped in LangChain's @tool decorator for automatic schema generation.
+Direct database tools (no MCP) — wrapped in LangChain's @tool decorator
+for automatic schema generation and function calling.
 
-User context (ContextVar) must be set by the caller BEFORE the agent runs.
+User context (ContextVar) is set by chat.py before agent runs.
 """
-import json
 from typing import Optional
-
 from langchain_core.tools import tool
-
-from app.mcp.server import mcp
-
-
-def _extract_text(result) -> str:
-    """Extract text from an MCP CallToolResult."""
-    content = getattr(result, "content", None)
-    if isinstance(content, list):
-        text_parts: list[str] = []
-        for item in content:
-            text_val = getattr(item, "text", None)
-            if text_val:
-                text_parts.append(text_val)
-        if text_parts:
-            return "\n".join(text_parts)
-    if isinstance(content, str):
-        return content
-    return str(result)
+from app.langchain_agent.database_tools import (
+    list_tables_direct,
+    fetch_schema_direct,
+    execute_sql_query_direct,
+)
 
 
 # ── Tool definitions ────────────────────────────────────────────────────
@@ -38,21 +23,13 @@ def _extract_text(result) -> str:
 @tool
 async def list_tables() -> str:
     """Returns all database table names. Call this first to discover available tables."""
-    try:
-        result = await mcp.call_tool("list_tables", {})
-        return _extract_text(result)
-    except Exception as exc:
-        return json.dumps({"error": str(exc)})
+    return await list_tables_direct()
 
 
 @tool
 async def fetch_schema(table_name: str) -> str:
     """Returns column definitions for a given table. Call after list_tables."""
-    try:
-        result = await mcp.call_tool("fetch_schema", {"table_name": table_name})
-        return _extract_text(result)
-    except Exception as exc:
-        return json.dumps({"error": str(exc)})
+    return await fetch_schema_direct(table_name)
 
 
 @tool
@@ -60,14 +37,7 @@ async def execute_sql_query(sql: str, params: Optional[list] = None) -> str:
     """Execute a SQL query with automatic role-based access control.
     SUPERADMIN gets full access. SUPPLIER is scoped to their supplier_id.
     DROP/ALTER/CREATE/TRUNCATE are always blocked."""
-    try:
-        args: dict = {"sql": sql}
-        if params:
-            args["params"] = params
-        result = await mcp.call_tool("execute_sql_query", args)
-        return _extract_text(result)
-    except Exception as exc:
-        return json.dumps({"error": str(exc)})
+    return await execute_sql_query_direct(sql, params or [])
 
 
 # Convenience list for the agent

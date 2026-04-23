@@ -4,6 +4,8 @@ LangChain agent controller — drop-in alternative to app.controllers.chat.
 Uses ChatOpenAI pointed at Groq's OpenAI-compatible endpoint,
 with LangGraph's create_react_agent (the modern LangChain agent API).
 
+Direct database tools (bypasses MCP server for better performance).
+
 Compare with app/controllers/chat.py (the custom 130-line agent loop).
 """
 from typing import Any
@@ -12,7 +14,7 @@ from langchain_openai import ChatOpenAI
 from langgraph.prebuilt import create_react_agent
 
 from app.config import settings
-from app.mcp.auth import set_mcp_user_context, reset_mcp_user_context
+from app.langchain_agent.database_tools import set_user_context, reset_user_context
 from app.langchain_agent.tools import ALL_TOOLS
 
 
@@ -48,8 +50,9 @@ async def chat_with_langchain(
     """
     LangChain equivalent of chat_with_mcp().
 
-    Same LLM (Groq Llama), same tools (MCP), same system prompt.
-    The only difference: LangGraph handles the tool-calling loop.
+    Same LLM (Groq Llama), same tools (direct DB access), same system prompt.
+    The only difference: LangGraph handles the tool-calling loop, and we use
+    direct database functions instead of MCP server.
     """
     if not settings.GROQ_API_KEY:
         raise ValueError("GROQ_API_KEY is missing in .env")
@@ -69,9 +72,9 @@ async def chat_with_langchain(
         prompt=SYSTEM_PROMPT,
     )
 
-    # Set MCP user context (ContextVar) so tool calls see the authenticated user.
+    # Set user context (ContextVar) so database tools see the authenticated user.
     # This is safe for concurrent requests — each asyncio Task has its own copy.
-    token = set_mcp_user_context(user)
+    token = set_user_context(user)
     try:
         result = await agent.ainvoke(
             {"messages": [{"role": "user", "content": prompt}]},
@@ -121,4 +124,4 @@ async def chat_with_langchain(
     except Exception as exc:
         raise ValueError(f"LangChain agent error: {exc}")
     finally:
-        reset_mcp_user_context(token)
+        reset_user_context(token)

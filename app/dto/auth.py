@@ -49,6 +49,7 @@ class AuthUser(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     user: AuthUser
+    user: AuthUser
     token_type: str = "bearer"
 
 # ── User DTOs ────────────────────────────────────────────────────────
