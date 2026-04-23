@@ -1,48 +1,3 @@
--- ============================================================
--- Warehouse ERP — Database Schema
--- ============================================================
--- CHANGE LOG (from SQL_REVIEW_PROMPT audit):
---
--- [1]  REMOVED orphaned FOREIGN KEY (supplier_id) from users table
---      WHY: users are independent of suppliers; a company owner can have many suppliers
---
--- [2]  Made warehouse_name NOT NULL
---      WHY: a warehouse without a name is meaningless and breaks UI/reporting
---
--- [3]  Made products.sku NOT NULL + UNIQUE
---      WHY: duplicate/null SKUs corrupt inventory tracking, purchase orders, and invoices
---
--- [4]  Added CHECK constraints on all status fields (purchase_orders, invoices, shipments)
---      WHY: unconstrained status allows garbage data; breaks workflows and reporting
---
--- [5]  Added UNIQUE(product_id, warehouse_id) on inventory
---      WHY: same product in same warehouse should be one row; duplicates cause stock miscounts
---
--- [6]  Added UNIQUE on shipments.tracking_number
---      WHY: two shipments should never share a tracking number
---
--- [7]  Added UNIQUE on customers.email
---      WHY: prevents duplicate customer records
---
--- [8]  Added CHECK(price >= 0) and CHECK(cost_price >= 0) on products
---      WHY: negative prices are invalid and break financial calculations
---
--- [9]  Added CHECK(quantity >= 0) on inventory
---      WHY: negative stock is invalid without explicit stock adjustment workflow
---
--- [10] Added CHECK(quantity > 0) on purchase_order_items and invoice_items
---      WHY: zero or negative quantity line items are invalid
---
--- [11] Added missing created_by/updated_by FOREIGN KEY constraints on all tables
---      WHY: ensures referential integrity for audit trail
---
--- [12] Added received_quantity + receiving_status to purchase_order_items
---      WHY: enables partial delivery tracking (a core ERP workflow)
---
--- [13] Added all mandatory indexes (FK, search, aggregation)
---      WHY: without indexes, JOINs degrade to full table scans at scale;
---      the conversational NL→SQL feature will be non-functional above ~10k rows
--- ============================================================
 
 CREATE TABLE IF NOT EXISTS users (
     user_id TEXT PRIMARY KEY,
@@ -50,37 +5,31 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(100) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     phone_number VARCHAR(20),
-
     role VARCHAR(20) CHECK (role IN ('SUPERADMIN', 'SUPPLIER')) NOT NULL,
-
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
-
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_by TEXT,
     updated_by TEXT,
-    supplier_id TEXT, -- Added for RBAC: links a SUPPLIER user to their company
-
     deleted BOOLEAN NOT NULL DEFAULT FALSE,
-
-    FOREIGN KEY (supplier_id) REFERENCES suppliers(supplier_id)
+    FOREIGN KEY (created_by) REFERENCES users(user_id),
+    FOREIGN KEY (updated_by) REFERENCES users(user_id)
 );
 
 CREATE TABLE IF NOT EXISTS suppliers (
     supplier_id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,     
     supplier_name VARCHAR(150) NOT NULL,
     contact_email VARCHAR(150),
     contact_phone VARCHAR(50),
     address TEXT,
-    status VARCHAR(20) DEFAULT 'Active',
-
+    status VARCHAR(20) DEFAULT 'Active',    
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_by TEXT,
     updated_by TEXT,
-
     deleted BOOLEAN NOT NULL DEFAULT FALSE,
-
+    FOREIGN KEY (user_id)REFERENCES users(user_id),
     FOREIGN KEY (created_by) REFERENCES users(user_id),
     FOREIGN KEY (updated_by) REFERENCES users(user_id)
 );
@@ -96,7 +45,6 @@ CREATE TABLE IF NOT EXISTS registration_requests (
     reviewed_by TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
     FOREIGN KEY (reviewed_by) REFERENCES users(user_id)
 );
 
@@ -151,31 +99,30 @@ CREATE TABLE IF NOT EXISTS products (
     product_id TEXT PRIMARY KEY,
     supplier_id TEXT NOT NULL,
     category_id TEXT,
-
+    user_id TEXT NOT NULL, 
     product_name VARCHAR(200) NOT NULL,
     description TEXT,
-    sku VARCHAR(100) NOT NULL UNIQUE,            -- [3] was nullable and non-unique
-    price NUMERIC(10,2) CHECK (price >= 0),      -- [8] prevent negative prices
-    cost_price NUMERIC(10,2) CHECK (cost_price >= 0),  -- [8] prevent negative cost
+    sku VARCHAR(100) NOT NULL UNIQUE,  
+    price NUMERIC(10,2) CHECK (price >= 0),
+    cost_price NUMERIC(10,2) CHECK (cost_price >= 0),
     weight DECIMAL(10,3),
     status VARCHAR(20) DEFAULT 'Active',
-
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_by TEXT,
     updated_by TEXT,
-
     deleted BOOLEAN NOT NULL DEFAULT FALSE,
-
     FOREIGN KEY (supplier_id)
         REFERENCES suppliers(supplier_id)
         ON DELETE CASCADE,
     FOREIGN KEY (category_id)
         REFERENCES categories(category_id)
         ON DELETE SET NULL,
-    FOREIGN KEY (created_by)                     -- [11] was missing
+    FOREIGN KEY (user_id)
         REFERENCES users(user_id),
-    FOREIGN KEY (updated_by)                     -- [11] was missing
+    FOREIGN KEY (created_by)
+        REFERENCES users(user_id),
+    FOREIGN KEY (updated_by)
         REFERENCES users(user_id)
 );
 
@@ -192,7 +139,7 @@ CREATE TABLE IF NOT EXISTS inventory (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_by TEXT,
     updated_by TEXT,
-    supplier_id TEXT NOT NULL, -- Added for RBAC: direct ownership for faster filtering
+    user_id TEXT NOT NULL,                       -- [14] RBAC: owner of this inventory record
 
     deleted BOOLEAN NOT NULL DEFAULT FALSE,
 
@@ -201,15 +148,14 @@ CREATE TABLE IF NOT EXISTS inventory (
     FOREIGN KEY (product_id)
         REFERENCES products(product_id)
         ON DELETE CASCADE,
-    FOREIGN KEY (supplier_id)                    -- Added for RBAC
-        REFERENCES suppliers(supplier_id)
-        ON DELETE CASCADE,
     FOREIGN KEY (warehouse_id)
         REFERENCES warehouses(warehouse_id)
         ON DELETE CASCADE,
-    FOREIGN KEY (created_by)                     -- [11] was missing
+    FOREIGN KEY (user_id)
         REFERENCES users(user_id),
-    FOREIGN KEY (updated_by)                     -- [11] was missing
+    FOREIGN KEY (created_by)
+        REFERENCES users(user_id),
+    FOREIGN KEY (updated_by)
         REFERENCES users(user_id)
 );
 
@@ -229,6 +175,7 @@ CREATE TABLE IF NOT EXISTS purchase_orders (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_by TEXT,
     updated_by TEXT,
+    user_id TEXT NOT NULL,                       -- [14] RBAC: owner of this purchase order
 
     deleted BOOLEAN NOT NULL DEFAULT FALSE,
 
@@ -238,9 +185,11 @@ CREATE TABLE IF NOT EXISTS purchase_orders (
     FOREIGN KEY (warehouse_id)
         REFERENCES warehouses(warehouse_id)
         ON DELETE SET NULL,
-    FOREIGN KEY (created_by)                     -- [11] was missing
+    FOREIGN KEY (user_id)
         REFERENCES users(user_id),
-    FOREIGN KEY (updated_by)                     -- [11] was missing
+    FOREIGN KEY (created_by)
+        REFERENCES users(user_id),
+    FOREIGN KEY (updated_by)
         REFERENCES users(user_id)
 );
 
@@ -258,6 +207,7 @@ CREATE TABLE IF NOT EXISTS purchase_order_items (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_by TEXT,
     updated_by TEXT,
+    user_id TEXT NOT NULL,                       -- [14] RBAC: owner of this PO item
 
     deleted BOOLEAN NOT NULL DEFAULT FALSE,
 
@@ -267,9 +217,11 @@ CREATE TABLE IF NOT EXISTS purchase_order_items (
     FOREIGN KEY (product_id)
         REFERENCES products(product_id)
         ON DELETE CASCADE,
-    FOREIGN KEY (created_by)                     -- [11] was missing
+    FOREIGN KEY (user_id)
         REFERENCES users(user_id),
-    FOREIGN KEY (updated_by)                     -- [11] was missing
+    FOREIGN KEY (created_by)
+        REFERENCES users(user_id),
+    FOREIGN KEY (updated_by)
         REFERENCES users(user_id)
 );
 
@@ -288,6 +240,7 @@ CREATE TABLE IF NOT EXISTS invoices (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_by TEXT,
     updated_by TEXT,
+    user_id TEXT NOT NULL,                       -- [14] RBAC: owner of this invoice
 
     deleted BOOLEAN NOT NULL DEFAULT FALSE,
 
@@ -297,9 +250,11 @@ CREATE TABLE IF NOT EXISTS invoices (
     FOREIGN KEY (po_id)
         REFERENCES purchase_orders(po_id)
         ON DELETE SET NULL,
-    FOREIGN KEY (created_by)                     -- [11] was missing
+    FOREIGN KEY (user_id)
         REFERENCES users(user_id),
-    FOREIGN KEY (updated_by)                     -- [11] was missing
+    FOREIGN KEY (created_by)
+        REFERENCES users(user_id),
+    FOREIGN KEY (updated_by)
         REFERENCES users(user_id)
 );
 
@@ -314,6 +269,7 @@ CREATE TABLE IF NOT EXISTS invoice_items (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_by TEXT,
     updated_by TEXT,
+    user_id TEXT NOT NULL,                       -- [14] RBAC: owner of this invoice item
 
     deleted BOOLEAN NOT NULL DEFAULT FALSE,
 
@@ -323,9 +279,11 @@ CREATE TABLE IF NOT EXISTS invoice_items (
     FOREIGN KEY (product_id)
         REFERENCES products(product_id)
         ON DELETE CASCADE,
-    FOREIGN KEY (created_by)                     -- [11] was missing
+    FOREIGN KEY (user_id)
         REFERENCES users(user_id),
-    FOREIGN KEY (updated_by)                     -- [11] was missing
+    FOREIGN KEY (created_by)
+        REFERENCES users(user_id),
+    FOREIGN KEY (updated_by)
         REFERENCES users(user_id)
 );
 
@@ -368,29 +326,23 @@ CREATE TABLE IF NOT EXISTS shipments (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_by TEXT,
     updated_by TEXT,
-    supplier_id TEXT NOT NULL, -- Added for RBAC: direct ownership for faster filtering
+    user_id TEXT NOT NULL,                       -- [14] RBAC: owner of this shipment
 
     deleted BOOLEAN NOT NULL DEFAULT FALSE,
 
     FOREIGN KEY (po_id)
         REFERENCES purchase_orders(po_id)
         ON DELETE CASCADE,
-    FOREIGN KEY (supplier_id)                    -- Added for RBAC
-        REFERENCES suppliers(supplier_id)
-        ON DELETE CASCADE,
     FOREIGN KEY (warehouse_id)
         REFERENCES warehouses(warehouse_id)
         ON DELETE SET NULL,
+    FOREIGN KEY (user_id)
+        REFERENCES users(user_id),
     FOREIGN KEY (created_by)
         REFERENCES users(user_id),
     FOREIGN KEY (updated_by)
         REFERENCES users(user_id)
 );
-
-
--- ============================================================
--- [13] INDEXES — Mandatory for performance at scale
--- ============================================================
 
 -- Foreign key indexes (required for JOIN performance)
 CREATE INDEX IF NOT EXISTS idx_products_supplier    ON products(supplier_id);
@@ -418,10 +370,15 @@ CREATE INDEX IF NOT EXISTS idx_po_date              ON purchase_orders(order_dat
 CREATE INDEX IF NOT EXISTS idx_invoice_date         ON invoices(invoice_date);
 CREATE INDEX IF NOT EXISTS idx_shipment_date        ON shipments(shipment_date);
 
--- RBAC indexes (added for performance)
-CREATE INDEX IF NOT EXISTS idx_inventory_supplier   ON inventory(supplier_id);
-CREATE INDEX IF NOT EXISTS idx_shipment_supplier    ON shipments(supplier_id);
-CREATE INDEX IF NOT EXISTS idx_user_supplier        ON users(supplier_id);
+-- [14] RBAC indexes — user_id on all owned tables for fast filtering
+CREATE INDEX IF NOT EXISTS idx_supplier_user        ON suppliers(user_id);
+CREATE INDEX IF NOT EXISTS idx_product_user         ON products(user_id);
+CREATE INDEX IF NOT EXISTS idx_inventory_user       ON inventory(user_id);
+CREATE INDEX IF NOT EXISTS idx_po_user              ON purchase_orders(user_id);
+CREATE INDEX IF NOT EXISTS idx_poi_user             ON purchase_order_items(user_id);
+CREATE INDEX IF NOT EXISTS idx_invoice_user         ON invoices(user_id);
+CREATE INDEX IF NOT EXISTS idx_invoice_item_user    ON invoice_items(user_id);
+CREATE INDEX IF NOT EXISTS idx_shipment_user        ON shipments(user_id);
 
 -- Composite indexes (aggregation queries: SUM/COUNT/GROUP BY)
 CREATE INDEX IF NOT EXISTS idx_invoice_date_status  ON invoices(invoice_date, status);

@@ -12,10 +12,10 @@ async def create_invoice(
 ) -> InvoiceRead:
     row = await conn.fetchrow(
         """
-        INSERT INTO invoices (invoice_id, supplier_id, po_id, invoice_number, invoice_date, total_amount, status, created_by, updated_by)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $8)
+        INSERT INTO invoices (invoice_id, supplier_id, po_id, invoice_number, invoice_date, total_amount, status, user_id, created_by, updated_by)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $8, $8)
         RETURNING invoice_id, supplier_id, po_id, invoice_number, invoice_date,
-                  total_amount, status, created_at, updated_at, created_by, updated_by
+                  total_amount, status, user_id, created_at, updated_at, created_by, updated_by
         """,
         str(uuid4()), data.supplier_id, data.po_id, data.invoice_number,
         data.invoice_date, data.total_amount, data.status, created_by,
@@ -23,46 +23,46 @@ async def create_invoice(
     return InvoiceRead(**dict(row))
 
 
-async def get_invoice(conn: asyncpg.Connection, invoice_id: str, supplier_id: Optional[str] = None) -> Optional[InvoiceRead]:
+async def get_invoice(
+    conn: asyncpg.Connection, invoice_id: str, user_id: Optional[str] = None
+) -> Optional[InvoiceRead]:
     query = """
         SELECT invoice_id, supplier_id, po_id, invoice_number, invoice_date,
-               total_amount, status, created_at, updated_at, created_by, updated_by
+               total_amount, status, user_id, created_at, updated_at, created_by, updated_by
         FROM invoices
         WHERE invoice_id = $1 AND deleted = FALSE
     """
     params = [invoice_id]
-    if supplier_id:
-        query += " AND supplier_id = $2"
-        params.append(supplier_id)
-        
+    if user_id:
+        query += " AND user_id = $2"
+        params.append(user_id)
+
     row = await conn.fetchrow(query, *params)
-    if not row:
-        return None
-    return InvoiceRead(**dict(row))
+    return InvoiceRead(**dict(row)) if row else None
 
 
 async def list_invoices(
-    conn: asyncpg.Connection, offset: int = 0, limit: int = 100, supplier_id: Optional[str] = None
+    conn: asyncpg.Connection, offset: int = 0, limit: int = 100, user_id: Optional[str] = None
 ) -> list[InvoiceRead]:
     query = """
         SELECT invoice_id, supplier_id, po_id, invoice_number, invoice_date,
-               total_amount, status, created_at, updated_at, created_by, updated_by
+               total_amount, status, user_id, created_at, updated_at, created_by, updated_by
         FROM invoices
         WHERE deleted = FALSE
     """
     params = [limit, offset]
-    if supplier_id:
-        query += " AND supplier_id = $3"
-        params.append(supplier_id)
-        
+    if user_id:
+        query += " AND user_id = $3"
+        params.append(user_id)
+
     query += " ORDER BY invoice_date DESC LIMIT $1 OFFSET $2"
-    
     rows = await conn.fetch(query, *params)
     return [InvoiceRead(**dict(r)) for r in rows]
 
 
 async def update_invoice(
-    conn: asyncpg.Connection, invoice_id: str, data: InvoiceUpdate, updated_by: Optional[str] = None, supplier_id: Optional[str] = None
+    conn: asyncpg.Connection, invoice_id: str, data: InvoiceUpdate,
+    updated_by: Optional[str] = None, user_id: Optional[str] = None
 ) -> Optional[InvoiceRead]:
     query = """
         UPDATE invoices
@@ -81,18 +81,17 @@ async def update_invoice(
         data.supplier_id, data.po_id, data.invoice_number, data.invoice_date,
         data.total_amount, data.status, updated_by, invoice_id
     ]
-    if supplier_id:
-        query = query.replace("WHERE invoice_id = $8", "WHERE invoice_id = $8 AND supplier_id = $9")
-        params.append(supplier_id)
+    if user_id:
+        query += " AND user_id = $9"
+        params.append(user_id)
 
-    query += " RETURNING invoice_id, supplier_id, po_id, invoice_number, invoice_date, total_amount, status, created_at, updated_at, created_by, updated_by"
-    
+    query += " RETURNING invoice_id, supplier_id, po_id, invoice_number, invoice_date, total_amount, status, user_id, created_at, updated_at, created_by, updated_by"
     row = await conn.fetchrow(query, *params)
     return InvoiceRead(**dict(row)) if row else None
 
 
 async def delete_invoice(
-    conn: asyncpg.Connection, invoice_id: str, deleted_by: Optional[str] = None, supplier_id: Optional[str] = None
+    conn: asyncpg.Connection, invoice_id: str, deleted_by: Optional[str] = None, user_id: Optional[str] = None
 ) -> bool:
     query = """
         UPDATE invoices
@@ -100,9 +99,9 @@ async def delete_invoice(
         WHERE invoice_id = $1 AND deleted = FALSE
     """
     params = [invoice_id, deleted_by]
-    if supplier_id:
-        query += " AND supplier_id = $3"
-        params.append(supplier_id)
-        
+    if user_id:
+        query += " AND user_id = $3"
+        params.append(user_id)
+
     result = await conn.execute(query, *params)
-    return result == "UPDATE 1"
+    return result == "UPDATE 1"

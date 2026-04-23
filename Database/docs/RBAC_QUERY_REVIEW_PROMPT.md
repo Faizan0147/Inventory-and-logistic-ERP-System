@@ -55,7 +55,7 @@ Must only access:
 SUPPLIER queries must include:
 
 ```sql
-WHERE supplier_id = :current_supplier_id
+WHERE supplier_id = :user
 ```
 
 Or equivalent join-based filtering.
@@ -92,7 +92,7 @@ Check whether they enforce role-based filtering.
 Find queries missing:
 
 ```sql
-WHERE supplier_id = :current_supplier_id
+WHERE user_id = current user_id
 ```
 
 Common failure cases:
@@ -114,7 +114,7 @@ Correct version:
 ```sql
 SELECT *
 FROM purchase_orders
-WHERE supplier_id = :current_supplier_id;
+WHERE user_id = :current_user_id;
 ```
 
 ---
@@ -141,7 +141,7 @@ SELECT *
 FROM purchase_orders po
 JOIN products p
 ON p.product_id = po.product_id
-WHERE po.supplier_id = :current_supplier_id;
+WHERE po.user_id = :current_user_id;
 ```
 
 Filtering only on product table is not sufficient.
@@ -192,7 +192,7 @@ Correct:
 ```sql
 UPDATE products
 SET price = 100
-WHERE supplier_id = :current_supplier_id;
+WHERE user_id = :current_user_id;
 ```
 
 Same applies to DELETE queries.

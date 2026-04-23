@@ -23,6 +23,7 @@ class SupplierUpdate(BaseModel):
 
 class SupplierRead(BaseModel):
     supplier_id: str
+    user_id: str
     supplier_name: str
     contact_email: Optional[str] = None
     contact_phone: Optional[str] = None

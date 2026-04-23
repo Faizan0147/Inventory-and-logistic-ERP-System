@@ -9,7 +9,7 @@ class ProductCreate(BaseModel):
     category_id: Optional[str] = None
     product_name: str
     description: Optional[str] = None
-    sku: Optional[str] = None
+    sku: str                                     # NOT NULL UNIQUE in schema
     price: Optional[Decimal] = None
     cost_price: Optional[Decimal] = None
     weight: Optional[Decimal] = None
@@ -31,10 +31,11 @@ class ProductUpdate(BaseModel):
 class ProductRead(BaseModel):
     product_id: str
     supplier_id: str
+    user_id: str
     category_id: Optional[str] = None
     product_name: str
     description: Optional[str] = None
-    sku: Optional[str] = None
+    sku: str
     price: Optional[Decimal] = None
     cost_price: Optional[Decimal] = None
     weight: Optional[Decimal] = None
