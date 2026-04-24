@@ -4,6 +4,7 @@ from pydantic import BaseModel
 
 
 class WarehouseCreate(BaseModel):
+    user_id: str
     warehouse_name: str
     location: Optional[str] = None
     city: Optional[str] = None
@@ -25,6 +26,7 @@ class WarehouseUpdate(BaseModel):
 
 class WarehouseRead(BaseModel):
     warehouse_id: str
+    user_id: str
     warehouse_name: str
     location: Optional[str] = None
     city: Optional[str] = None

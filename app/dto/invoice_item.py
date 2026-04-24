@@ -19,6 +19,7 @@ class InvoiceItemRead(BaseModel):
     invoice_item_id: str
     invoice_id: str
     product_id: str
+    user_id: str
     quantity: Optional[int] = None
     price: Optional[float] = None
     created_at: Optional[datetime] = None

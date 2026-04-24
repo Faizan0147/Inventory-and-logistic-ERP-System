@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS registration_requests (
 
 CREATE TABLE IF NOT EXISTS categories (
     category_id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
     category_name VARCHAR(100) NOT NULL,
     description TEXT,
     parent_category_id TEXT,
@@ -63,6 +64,8 @@ CREATE TABLE IF NOT EXISTS categories (
 
     FOREIGN KEY (parent_category_id)
         REFERENCES categories(category_id),
+    FOREIGN KEY (user_id)
+        REFERENCES users(user_id),
     FOREIGN KEY (created_by)
         REFERENCES users(user_id),
     FOREIGN KEY (updated_by)
@@ -71,7 +74,8 @@ CREATE TABLE IF NOT EXISTS categories (
 
 CREATE TABLE IF NOT EXISTS warehouses (
     warehouse_id TEXT PRIMARY KEY,
-    warehouse_name VARCHAR(100) NOT NULL,        -- [2] was nullable
+    user_id TEXT NOT NULL,
+    warehouse_name VARCHAR(100) NOT NULL,        
     location TEXT,
     city VARCHAR(50),
     capacity INT,
@@ -89,6 +93,8 @@ CREATE TABLE IF NOT EXISTS warehouses (
     FOREIGN KEY (manager_id)
         REFERENCES users(user_id)
         ON DELETE SET NULL,
+    FOREIGN KEY (user_id)
+        REFERENCES users(user_id),
     FOREIGN KEY (created_by)
         REFERENCES users(user_id),
     FOREIGN KEY (updated_by)
@@ -131,7 +137,7 @@ CREATE TABLE IF NOT EXISTS inventory (
     user_id TEXT NOT NULL, 
     product_id TEXT NOT NULL,
     warehouse_id TEXT NOT NULL,
-    quantity INT NOT NULL DEFAULT 0 CHECK (quantity >= 0)
+    quantity INT NOT NULL DEFAULT 0 CHECK (quantity >= 0),
     reorder_level INT DEFAULT 0,
     last_restocked TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -163,7 +169,7 @@ CREATE TABLE IF NOT EXISTS purchase_orders (
     order_date DATE,
     expected_delivery DATE,
     total_amount NUMERIC(12,2),
-    status VARCHAR(50) CHECK (status IN           -- [4] constrain valid statuses
+    status VARCHAR(50) CHECK (status IN           
         ('Draft', 'Pending', 'Approved', 'Shipped', 'Received', 'Cancelled')
     ),
 
@@ -171,7 +177,7 @@ CREATE TABLE IF NOT EXISTS purchase_orders (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_by TEXT,
     updated_by TEXT,
-    user_id TEXT NOT NULL,                       -- [14] RBAC: owner of this purchase order
+    user_id TEXT NOT NULL,                      
 
     deleted BOOLEAN NOT NULL DEFAULT FALSE,
 
@@ -193,17 +199,17 @@ CREATE TABLE IF NOT EXISTS purchase_order_items (
     po_item_id TEXT PRIMARY KEY,
     po_id TEXT NOT NULL,
     product_id TEXT NOT NULL,
-    quantity INT NOT NULL CHECK (quantity > 0),   -- [10] must be positive
+    quantity INT NOT NULL CHECK (quantity > 0),  
     price NUMERIC(10,2),
-    received_quantity INT NOT NULL DEFAULT 0,     -- [12] partial delivery tracking
-    receiving_status VARCHAR(20) DEFAULT 'Pending'-- [12] partial delivery tracking
+    received_quantity INT NOT NULL DEFAULT 0,     
+    receiving_status VARCHAR(20) DEFAULT 'Pending'
         CHECK (receiving_status IN ('Pending', 'Partial', 'Complete')),
 
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_by TEXT,
     updated_by TEXT,
-    user_id TEXT NOT NULL,                       -- [14] RBAC: owner of this PO item
+    user_id TEXT NOT NULL,                       
 
     deleted BOOLEAN NOT NULL DEFAULT FALSE,
 
@@ -228,7 +234,7 @@ CREATE TABLE IF NOT EXISTS invoices (
     invoice_number VARCHAR(100) UNIQUE,
     invoice_date DATE,
     total_amount NUMERIC(12,2),
-    status VARCHAR(50) CHECK (status IN           -- [4] constrain valid statuses
+    status VARCHAR(50) CHECK (status IN           
         ('Draft', 'Pending', 'Paid', 'Overdue', 'Cancelled')
     ),
 
@@ -236,7 +242,7 @@ CREATE TABLE IF NOT EXISTS invoices (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_by TEXT,
     updated_by TEXT,
-    user_id TEXT NOT NULL,                       -- [14] RBAC: owner of this invoice
+    user_id TEXT NOT NULL,                       
 
     deleted BOOLEAN NOT NULL DEFAULT FALSE,
 
@@ -258,14 +264,14 @@ CREATE TABLE IF NOT EXISTS invoice_items (
     invoice_item_id TEXT PRIMARY KEY,
     invoice_id TEXT NOT NULL,
     product_id TEXT NOT NULL,
-    quantity INT CHECK (quantity > 0),            -- [10] must be positive
+    quantity INT CHECK (quantity > 0),           
     price NUMERIC(10,2),
 
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_by TEXT,
     updated_by TEXT,
-    user_id TEXT NOT NULL,                       -- [14] RBAC: owner of this invoice item
+    user_id TEXT NOT NULL,                       
 
     deleted BOOLEAN NOT NULL DEFAULT FALSE,
 
@@ -305,7 +311,7 @@ CREATE TABLE IF NOT EXISTS customers (
 );
 CREATE TABLE IF NOT EXISTS shipments (
     shipment_id TEXT PRIMARY KEY,
-    purchase_order_id TEXT NOT NULL,
+    po_id TEXT NOT NULL,
     warehouse_id TEXT,
     user_id TEXT NOT NULL,
     carrier_name VARCHAR(100) CHECK (carrier_name IN (
@@ -324,8 +330,8 @@ CREATE TABLE IF NOT EXISTS shipments (
     created_by TEXT,
     updated_by TEXT,
     deleted BOOLEAN NOT NULL DEFAULT FALSE,
-    FOREIGN KEY (purchase_order_id)
-        REFERENCES purchase_orders(purchase_order_id)
+    FOREIGN KEY (po_id)
+        REFERENCES purchase_orders(po_id)
         ON DELETE CASCADE,
     FOREIGN KEY (warehouse_id)
         REFERENCES warehouses(warehouse_id)
@@ -366,6 +372,8 @@ CREATE INDEX IF NOT EXISTS idx_shipment_date        ON shipments(shipment_date);
 -- [14] RBAC indexes — user_id on all owned tables for fast filtering
 CREATE INDEX IF NOT EXISTS idx_supplier_user        ON suppliers(user_id);
 CREATE INDEX IF NOT EXISTS idx_product_user         ON products(user_id);
+CREATE INDEX IF NOT EXISTS idx_category_user        ON categories(user_id);
+CREATE INDEX IF NOT EXISTS idx_warehouse_user       ON warehouses(user_id);
 CREATE INDEX IF NOT EXISTS idx_inventory_user       ON inventory(user_id);
 CREATE INDEX IF NOT EXISTS idx_po_user              ON purchase_orders(user_id);
 CREATE INDEX IF NOT EXISTS idx_poi_user             ON purchase_order_items(user_id);

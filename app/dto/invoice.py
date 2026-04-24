@@ -26,6 +26,7 @@ class InvoiceUpdate(BaseModel):
 class InvoiceRead(BaseModel):
     invoice_id: str
     supplier_id: str
+    user_id: str
     po_id: Optional[str] = None
     invoice_number: Optional[str] = None
     invoice_date: Optional[date] = None

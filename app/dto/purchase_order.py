@@ -28,6 +28,7 @@ class PurchaseOrderUpdate(BaseModel):
 class PurchaseOrderRead(BaseModel):
     po_id: str
     supplier_id: str
+    user_id: str
     warehouse_id: Optional[str] = None
     order_number: Optional[str] = None
     order_date: Optional[date] = None

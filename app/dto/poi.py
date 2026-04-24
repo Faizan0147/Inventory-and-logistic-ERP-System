@@ -22,6 +22,7 @@ class POItemRead(BaseModel):
     po_item_id: str
     po_id: str
     product_id: str
+    user_id: str
     quantity: int
     price: Optional[Decimal] = None
     created_at: Optional[datetime] = None
