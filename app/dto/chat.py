@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 
 class ChatRequest(BaseModel):
     prompt: str = Field(min_length=1, max_length=4000)
+    session_id: str | None = Field(default=None, description="Pass a consistent ID to maintain conversation history")
 
 class ChatResponse(BaseModel):
     reply: str

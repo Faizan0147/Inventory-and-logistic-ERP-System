@@ -1,22 +1,15 @@
-"""
-LangChain agent — chat controller.
-
-Uses ChatOpenAI pointed at Groq's OpenAI-compatible endpoint,
-with LangGraph's create_react_agent.
-
-Direct database tools for better performance.
-"""
 from typing import Any
-
 from langchain_openai import ChatOpenAI
 from langgraph.prebuilt import create_react_agent
-
 from app.config import settings
 from app.langchain_agent.database_tools import set_user_context, reset_user_context
 from app.langchain_agent.tools import ALL_TOOLS
 
+# In-memory conversation history store: { session_id: [messages] }
+_conversation_store: dict[str, list[dict]] = {}
 
-# ── Same system prompt as the custom agent ──────────────────────────────
+
+# ──system prompt ──────────────────────────────
 SYSTEM_PROMPT = (
     "You are a helpful ERP data assistant. You have access to tools for database exploration "
     "and SQL execution — use them when the user asks about tables, schemas, or data.\n\n"
@@ -40,18 +33,21 @@ SYSTEM_PROMPT = (
 )
 
 
+def clear_session(session_id: str) -> None:
+    """Clear conversation history for a session."""
+    _conversation_store.pop(session_id, None)
+
+
 async def chat_with_langchain(
     prompt: str,
     user: dict,
+    session_id: str | None = None,
     debug: bool = False,
 ) -> dict[str, Any]:
-    """
-    Run the LangChain agent with the given prompt and authenticated user.
-    """
+
     if not settings.GROQ_API_KEY:
         raise ValueError("GROQ_API_KEY is missing in .env")
 
-    # ChatOpenAI pointed at Groq's OpenAI-compatible API
     llm = ChatOpenAI(
         api_key=settings.GROQ_API_KEY,
         base_url="https://api.groq.com/openai/v1",
@@ -59,27 +55,27 @@ async def chat_with_langchain(
         temperature=0.2,
     )
 
-    # Create the react agent (LangGraph-based, replaces the old AgentExecutor)
     agent = create_react_agent(
         model=llm,
         tools=ALL_TOOLS,
         prompt=SYSTEM_PROMPT,
     )
 
-    # Set user context (ContextVar) so database tools see the authenticated user.
-    # This is safe for concurrent requests — each asyncio Task has its own copy.
+    # Build message history
+    history = _conversation_store.get(session_id, []) if session_id else []
+    messages = history + [{"role": "user", "content": prompt}]
+
     token = set_user_context(user)
     try:
         result = await agent.ainvoke(
-            {"messages": [{"role": "user", "content": prompt}]},
+            {"messages": messages},
             config={"recursion_limit": settings.TOOL_CALL_MAX_STEPS},
         )
 
-        # Extract the final AI message from the conversation history
-        messages = result.get("messages", [])
+        # Extract the final AI message
+        result_messages = result.get("messages", [])
         reply = ""
-        for msg in reversed(messages):
-            # Find the last AI message that isn't a tool call
+        for msg in reversed(result_messages):
             if hasattr(msg, "content") and getattr(msg, "type", None) == "ai":
                 if msg.content and not getattr(msg, "tool_calls", None):
                     reply = msg.content
@@ -88,12 +84,17 @@ async def chat_with_langchain(
         if not reply:
             reply = "I could not generate a response."
 
+        # Persist updated history for this session
+        if session_id:
+            _conversation_store[session_id] = messages + [
+                {"role": "assistant", "content": reply}
+            ]
+
         out: dict[str, Any] = {"reply": reply}
 
         if debug:
-            # Serialize the full message history for inspection
             debug_messages = []
-            for msg in messages:
+            for msg in result_messages:
                 entry = {
                     "type": getattr(msg, "type", "unknown"),
                     "content": getattr(msg, "content", ""),

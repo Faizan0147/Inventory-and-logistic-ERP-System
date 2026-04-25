@@ -20,7 +20,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Warehouse ERP API",
+    title="GodaamX",
     version="1.0.0",
     lifespan=lifespan,
 )
