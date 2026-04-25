@@ -312,9 +312,9 @@
     <aside class="sidebar">
       <div class="brand">Warehouse ERP AI Console</div>
       <div class="sub">
-        Login once, then ask natural-language questions. The assistant can route to MCP tools for schema lookup and SQL operations.
+        Login once, then ask natural-language questions. The assistant uses LangChain tools for schema lookup and SQL operations.
       </div>
-      <div class="pill">MCP-enabled Tool Calling</div>
+      <div class="pill">LangChain Agent</div>
       <div class="pill">Role-aware SQL access</div>
       <div class="pill">Session-scoped token auth</div>
     </aside>
@@ -323,13 +323,6 @@
       <div class="topbar">
         <div class="title">Data Assistant</div>
         <div style="display:flex;align-items:center;gap:16px">
-          <div class="agent-toggle">
-            <label for="agentSelect">Agent:</label>
-            <select id="agentSelect">
-              <option value="custom">Custom Groq</option>
-              <option value="langchain">LangChain</option>
-            </select>
-          </div>
           <div class="status"><span id="statusDot" class="dot"></span><span id="statusText">Not logged in</span></div>
         </div>
       </div>
@@ -351,7 +344,7 @@
               <button id="clearBtn" class="btn-ghost" type="button">Clear</button>
             </div>
             <div id="authError" class="error"></div>
-            <div class="note">Token is used for API authorization and MCP-aware tool access.</div>
+            <div class="note">Token is used for API authorization.</div>
           </div>
         </div>
       </section>
@@ -367,7 +360,7 @@
             <div class="auth-row" style="margin-top:10px;">
               <button id="logoutBtn" class="btn-ghost" type="button">Logout</button>
             </div>
-            <div class="note">The assistant can call MCP tools automatically when needed.</div>
+            <div class="note">The assistant calls LangChain tools automatically when needed.</div>
           </div>
         </div>
       </section>
@@ -446,10 +439,7 @@
       addMessage("user", prompt);
       box.value = "";
 
-      const agent = document.getElementById("agentSelect").value;
-      const endpoint = agent === "langchain"
-        ? "/api/v1/langchain-chat/message"
-        : "/api/v1/chat/message";
+      const endpoint = "/api/v1/chat/message";
 
       try {
         const res = await fetch(endpoint, {
@@ -469,8 +459,7 @@
           return;
         }
 
-        const agentLabel = agent === "langchain" ? "[LangChain]" : "[Custom]";
-        addMessage("bot", `${agentLabel} ${data.reply || "No response from assistant."}`);
+        addMessage("bot", data.reply || "No response from assistant.");
 
       } catch (err) {
         addMessage("bot", "Network error: unable to call chat API.");

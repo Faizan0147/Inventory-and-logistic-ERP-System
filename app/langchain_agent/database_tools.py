@@ -14,7 +14,7 @@ from app.database import get_pool
 from app.langchain_agent.query_checks import apply_query_checks
 
 
-# ContextVar for user context (same as MCP, but langchain sets it)
+# ContextVar for user context
 _CURRENT_USER: ContextVar[dict | None] = ContextVar("current_user", default=None)
 
 

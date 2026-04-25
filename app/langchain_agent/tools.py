@@ -1,10 +1,9 @@
 """
-LangChain tool wrappers for database access.
+LangChain tool wrappers for direct database access.
 
-Direct database tools (no MCP) — wrapped in LangChain's @tool decorator
-for automatic schema generation and function calling.
-
-User context (ContextVar) is set by chat.py before agent runs.
+Wrapped in LangChain's @tool decorator for automatic schema generation
+and function calling. User context (ContextVar) is set by chat.py before
+the agent runs.
 """
 from typing import Optional
 from langchain_core.tools import tool

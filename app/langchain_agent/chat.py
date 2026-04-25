@@ -1,12 +1,10 @@
 """
-LangChain agent controller — drop-in alternative to app.controllers.chat.
+LangChain agent — chat controller.
 
 Uses ChatOpenAI pointed at Groq's OpenAI-compatible endpoint,
-with LangGraph's create_react_agent (the modern LangChain agent API).
+with LangGraph's create_react_agent.
 
-Direct database tools (bypasses MCP server for better performance).
-
-Compare with app/controllers/chat.py (the custom 130-line agent loop).
+Direct database tools for better performance.
 """
 from typing import Any
 
@@ -48,11 +46,7 @@ async def chat_with_langchain(
     debug: bool = False,
 ) -> dict[str, Any]:
     """
-    LangChain equivalent of chat_with_mcp().
-
-    Same LLM (Groq Llama), same tools (direct DB access), same system prompt.
-    The only difference: LangGraph handles the tool-calling loop, and we use
-    direct database functions instead of MCP server.
+    Run the LangChain agent with the given prompt and authenticated user.
     """
     if not settings.GROQ_API_KEY:
         raise ValueError("GROQ_API_KEY is missing in .env")

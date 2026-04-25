@@ -50,14 +50,6 @@ async def auth_cookie_to_header(request: Request, call_next):
     return await call_next(request)
 
 
-# ── Mount MCP server at /mcp (SSE transport) ────────────────────────
-# Browser connects to:
-#   GET  /mcp/sse       → SSE event stream
-#   POST /mcp/messages  → send tool call messages
-# The access_token cookie is sent automatically by the browser.
-app.mount("/mcp", mcp.http_app(transport="sse"))
-
-
 @app.get("/", tags=["Health"])
 async def root():
     return {"message": "Warehouse ERP API is running"}

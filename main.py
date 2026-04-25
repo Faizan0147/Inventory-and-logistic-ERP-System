@@ -4,7 +4,7 @@ Run with:  python main.py
 Or with:   uvicorn app.main:app --reload
 
 Flags:
-  --ngrok   Start an ngrok tunnel for cloud-based MCP access
+  --ngrok   Start an ngrok tunnel for external access
 """
 
 import sys
@@ -33,7 +33,6 @@ def start_ngrok(port: int) -> str:
     print("\n" + "=" * 60)
     print("ngrok tunnel active")
     print(f"Public URL : {public_url}")
-    print(f"MCP SSE    : {public_url}/mcp/sse")
     print(f"API docs   : {public_url}/docs")
     print("=" * 60 + "\n")
 
