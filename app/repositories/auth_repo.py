@@ -1,7 +1,7 @@
 """
-Database queries for users and registration requests.
+Database queries for registration requests.
 """
-
+import logging
 from typing import Optional
 from uuid import uuid4
 
@@ -12,19 +12,21 @@ from app.dto.auth import (
     RegistrationRequestRead,
 )
 
+logger = logging.getLogger(__name__)
 
-# ── Registration Requests ────────────────────────────────────────────
 
 async def create_registration_request(
-    conn: asyncpg.Connection, data: RegistrationRequestCreate
+    conn: asyncpg.Connection, 
+    data: RegistrationRequestCreate
 ) -> RegistrationRequestRead:
+
     row = await conn.fetchrow(
         """
         INSERT INTO registration_requests
             (request_id, name, email, phone, company_name, message)
         VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING request_id, name, email, phone, company_name,
-         message, status, created_at
+                  message, status, created_at
         """,
         str(uuid4()),
         data.name,
@@ -39,6 +41,7 @@ async def create_registration_request(
 async def list_pending_requests(
     conn: asyncpg.Connection,
 ) -> list[RegistrationRequestRead]:
+
     rows = await conn.fetch(
         """
         SELECT request_id, name, email, phone, company_name,
@@ -54,6 +57,7 @@ async def list_pending_requests(
 async def get_request_by_id(
     conn: asyncpg.Connection, request_id: str
 ) -> Optional[RegistrationRequestRead]:
+
     row = await conn.fetchrow(
         """
         SELECT request_id, name, email, phone, company_name,
@@ -69,6 +73,7 @@ async def get_request_by_id(
 async def update_request_status(
     conn: asyncpg.Connection, request_id: str, status: str, reviewed_by: str
 ) -> None:
+
     await conn.execute(
         """
         UPDATE registration_requests

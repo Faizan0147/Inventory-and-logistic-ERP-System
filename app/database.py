@@ -4,7 +4,6 @@ from app.config import settings
 # Connection pool — created once at startup, shared across requests
 _pool: asyncpg.Pool | None = None
 
-
 async def create_pool():
     global _pool
     print("DATABASE_URL:", settings.DATABASE_URL)
@@ -15,13 +14,10 @@ async def create_pool():
         command_timeout=10,
     )
 
-    
-
 async def close_pool():
     global _pool
     if _pool:
         await _pool.close()
-
 
 async def get_connection():
     """FastAPI dependency: yields a single connection from the pool."""
