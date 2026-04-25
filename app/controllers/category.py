@@ -19,8 +19,6 @@ async def create_category(
     current_user: dict,
 ) -> CategoryRead:
     try:
-        # Note: CategoryCreate DTO was updated to include user_id if needed, 
-        # but we override it here with current_user["user_id"] for security.
         return await category_repo.create_category(
             conn, body, user_id=current_user["user_id"], created_by=current_user["user_id"]
         )

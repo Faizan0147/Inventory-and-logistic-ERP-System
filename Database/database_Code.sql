@@ -263,18 +263,15 @@ CREATE TABLE IF NOT EXISTS invoices (
 CREATE TABLE IF NOT EXISTS invoice_items (
     invoice_item_id TEXT PRIMARY KEY,
     invoice_id TEXT NOT NULL,
-    product_id TEXT NOT NULL,
+    product_id TEXT NOT NULL,user_id TEXT NOT NULL, 
     quantity INT CHECK (quantity > 0),           
     price NUMERIC(10,2),
-
+    user_id TEXT NOT NULL, 
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_by TEXT,
-    updated_by TEXT,
-    user_id TEXT NOT NULL,                       
-
+    updated_by TEXT,               
     deleted BOOLEAN NOT NULL DEFAULT FALSE,
-
     FOREIGN KEY (invoice_id)
         REFERENCES invoices(invoice_id)
         ON DELETE CASCADE,
