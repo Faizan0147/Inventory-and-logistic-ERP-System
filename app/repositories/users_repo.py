@@ -63,7 +63,10 @@ async def get_user(conn: asyncpg.Connection, user_id: str) -> Optional[UserRead]
 
 
 async def list_users(
-    conn: asyncpg.Connection, offset: int = 0, limit: int = 100
+    conn: asyncpg.Connection, 
+    offset: int = 0, 
+    limit: int = 100,
+    
 ) -> list[UserRead]:
     logger.debug("Listing users offset=%d limit=%d", offset, limit)
     rows = await conn.fetch(

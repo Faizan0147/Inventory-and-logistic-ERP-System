@@ -22,7 +22,7 @@ async def list_users(
 ) -> list[UserRead]:
     # SUPPLIER sees only their own record; ADMIN sees all
     current_user_id = current_user["user_id"] if current_user["role"] == "SUPPLIER" else None
-    return await users_repo.list_users(conn, offset, limit, current_user_id=current_user_id)
+    return await users_repo.list_users(conn, offset, limit)
 
 
 async def get_user(
