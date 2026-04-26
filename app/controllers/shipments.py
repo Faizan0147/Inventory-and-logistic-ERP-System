@@ -92,7 +92,7 @@ async def update_shipment(
         raise HTTPException(status_code=500, detail=str(e))
 
     if not shipment:
-        raise HTTPException(status_code=404, detail="Shipment not found or access denied")
+        raise HTTPException(status_code=404, detail="Shipment not found")
     return shipment
 
 
@@ -100,7 +100,7 @@ async def delete_shipment(
     conn: asyncpg.Connection,
     shipment_id: str,
     current_user: dict,
-) -> None:
+) -> dict:
 
     try:
         deleted = await shipments_repo.delete_shipment(
@@ -114,4 +114,6 @@ async def delete_shipment(
         raise HTTPException(status_code=500, detail=str(e))
 
     if not deleted:
-        raise HTTPException(status_code=404, detail="Shipment not found or access denied")
+        raise HTTPException(status_code=404, detail="Shipment not found")
+    
+    return {"message": "Shipment deleted successfully"}

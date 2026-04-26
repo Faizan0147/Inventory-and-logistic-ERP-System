@@ -90,7 +90,7 @@ async def update_customer(
         raise HTTPException(status_code=500, detail=str(e))
 
     if not customer:
-        raise HTTPException(status_code=404, detail="Customer not found or access denied")
+        raise HTTPException(status_code=404, detail="Customer not found")
     return customer
 
 
@@ -98,7 +98,7 @@ async def delete_customer(
     conn: asyncpg.Connection,
     customer_id: str,
     current_user: dict,
-) -> None:
+) -> dict:
 
     try:
         deleted = await customer_repo.delete_customer(
@@ -112,4 +112,6 @@ async def delete_customer(
         raise HTTPException(status_code=500, detail=str(e))
 
     if not deleted:
-        raise HTTPException(status_code=404, detail="Customer not found or access denied")
+        raise HTTPException(status_code=404, detail="Customer not found")
+    
+    return {"message": "Customer deleted successfully"}

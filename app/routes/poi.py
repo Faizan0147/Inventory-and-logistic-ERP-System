@@ -29,12 +29,12 @@ async def get_po_item(po_item_id: str, conn: Conn, current_user: CurrentUser):
 
 
 
-@router.patch("/{po_id}/items/{po_item_id}", response_model=POItemRead)
+@router.put("/{po_id}/items/{po_item_id}", response_model=POItemRead)
 async def update_po_item(po_item_id: str, body: POItemUpdate, conn: Conn, current_user: CurrentUser):
     return await poi.update_po_item(conn, po_item_id, body, current_user)
 
 
-@router.delete("/{po_id}/items/{po_item_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_po_item(po_item_id: str, conn: Conn, current_user: CurrentUser):
-    await poi.delete_po_item(conn, po_item_id, current_user)
+@router.delete("/{po_id}/items/{po_item_id}", status_code=200)
+async def delete_po_item(po_item_id: str, conn: Conn, current_user: CurrentUser) -> dict:
+    return await poi.delete_po_item(conn, po_item_id, current_user)
 

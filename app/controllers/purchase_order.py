@@ -83,7 +83,7 @@ async def update_purchase_order(
         raise HTTPException(status_code=500, detail=str(e))
 
     if not po:
-        raise HTTPException(status_code=404, detail="Purchase order not found or access denied")
+        raise HTTPException(status_code=404, detail="Purchase order not found")
     return po
 
 
@@ -91,7 +91,7 @@ async def delete_purchase_order(
     conn: asyncpg.Connection, 
     po_id: str, 
     current_user: dict
-) -> None:
+) -> dict:
     try:
         deleted = await purchase_order_repo.delete_purchase_order(
             conn, po_id, 
@@ -103,4 +103,6 @@ async def delete_purchase_order(
         raise HTTPException(status_code=500, detail=str(e))
 
     if not deleted:
-        raise HTTPException(status_code=404, detail="Purchase order not found or access denied")
+        raise HTTPException(status_code=404, detail="Purchase order not found")
+    
+    return {"message": "Purchase order deleted successfully"}

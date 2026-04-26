@@ -20,19 +20,19 @@ async def create_customer(body: CustomerCreate, conn: Conn, current_user: Curren
 
 @router.get("/", response_model=list[CustomerRead])
 async def list_customers(conn: Conn, current_user: CurrentUser, offset: int = 0, limit: int = 100):
-    return await customer_controller.list_customers(conn, offset, limit)
+    return await customer_controller.list_customers(conn, offset, limit, current_user)
 
 
 @router.get("/{customer_id}", response_model=CustomerRead)
 async def get_customer(customer_id: str, conn: Conn, current_user: CurrentUser):
-    return await customer_controller.get_customer(conn, customer_id)
+    return await customer_controller.get_customer(conn, customer_id, current_user)
 
 
-@router.patch("/{customer_id}", response_model=CustomerRead)
+@router.put("/{customer_id}", response_model=CustomerRead)
 async def update_customer(customer_id: str, body: CustomerUpdate, conn: Conn, current_user: CurrentUser):
     return await customer_controller.update_customer(conn, customer_id, body, current_user)
 
 
-@router.delete("/{customer_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_customer(customer_id: str, conn: Conn, current_user: CurrentUser):
-    await customer_controller.delete_customer(conn, customer_id, current_user)
+@router.delete("/{customer_id}", status_code=200)
+async def delete_customer(customer_id: str, conn: Conn, current_user: CurrentUser) -> dict:
+    return await customer_controller.delete_customer(conn, customer_id, current_user) 

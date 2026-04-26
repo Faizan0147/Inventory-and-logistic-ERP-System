@@ -30,11 +30,11 @@ async def get_supplier(supplier_id: str, conn: Conn, current_user: CurrentUser):
 
 
 
-@router.patch("/{supplier_id}", response_model=SupplierRead)
+@router.put("/{supplier_id}", response_model=SupplierRead)
 async def update_supplier(supplier_id: str, body: SupplierUpdate, conn: Conn, current_user: CurrentUser):
     return await supplier_controller.update_supplier(conn, supplier_id, body, current_user)
 
 
-@router.delete("/{supplier_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_supplier(supplier_id: str, conn: Conn, current_user: CurrentUser):
-    await supplier_controller.delete_supplier(conn, supplier_id, current_user)
+@router.delete("/{supplier_id}", status_code=200)
+async def delete_supplier(supplier_id: str, conn: Conn, current_user: CurrentUser) -> dict:
+    return await supplier_controller.delete_supplier(conn, supplier_id, current_user)

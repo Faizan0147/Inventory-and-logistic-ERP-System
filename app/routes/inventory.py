@@ -29,11 +29,11 @@ async def get_inventory(inventory_id: str, conn: Conn, current_user: CurrentUser
     return await inventory_controller.get_inventory(conn, inventory_id, current_user=current_user)
 
 
-@router.patch("/{inventory_id}", response_model=InventoryRead)
-async def update_warehouse(inventory_id: str, body: InventoryUpdate, conn: Conn, current_user: CurrentUser):
+@router.put("/{inventory_id}", response_model=InventoryRead)
+async def update_inventory(inventory_id: str, body: InventoryUpdate, conn: Conn, current_user: CurrentUser):
     return await inventory_controller.update_inventory(conn, inventory_id, body, current_user)
 
 
-@router.delete("/{inventory_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_inventory(inventory_id: str, conn: Conn, current_user: CurrentUser):
-    await inventory_controller.delete_inventory(conn, inventory_id, current_user)
+@router.delete("/{inventory_id}", status_code=200)
+async def delete_inventory(inventory_id: str, conn: Conn, current_user: CurrentUser) -> dict:
+    return await inventory_controller.delete_inventory(conn, inventory_id, current_user)

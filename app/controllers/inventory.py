@@ -90,7 +90,7 @@ async def update_inventory(
         raise HTTPException(status_code=500, detail=str(e))
 
     if not inventory:
-        raise HTTPException(status_code=404, detail="Inventory not found or access denied")
+        raise HTTPException(status_code=404, detail="Inventory not found")
     return inventory
 
 
@@ -98,7 +98,7 @@ async def delete_inventory(
     conn: asyncpg.Connection,
     inventory_id: str,
     current_user: dict,
-) -> None:
+) -> dict:
 
     try:
         deleted = await inventory_repo.delete_inventory(
@@ -112,4 +112,6 @@ async def delete_inventory(
         raise HTTPException(status_code=500, detail=str(e))
 
     if not deleted:
-        raise HTTPException(status_code=404, detail="Inventory not found or access denied")
+        raise HTTPException(status_code=404, detail="Inventory not found")
+    
+    return {"message": "Inventory deleted successfully"}

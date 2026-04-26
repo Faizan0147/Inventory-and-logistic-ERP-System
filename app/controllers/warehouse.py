@@ -81,7 +81,7 @@ async def update_warehouse(
         raise HTTPException(status_code=500, detail=str(e))
 
     if not warehouse:
-        raise HTTPException(status_code=404, detail="Warehouse not found or access denied")
+        raise HTTPException(status_code=404, detail="Warehouse not found")
     return warehouse
 
 
@@ -89,7 +89,7 @@ async def delete_warehouse(
     conn: asyncpg.Connection, 
     warehouse_id: str, 
     current_user: dict
-) -> None:
+) -> dict:
     try:
         deleted = await warehouse_repo.delete_warehouse(
             conn, warehouse_id, 
@@ -101,4 +101,6 @@ async def delete_warehouse(
         raise HTTPException(status_code=500, detail=str(e))
 
     if not deleted:
-        raise HTTPException(status_code=404, detail="Warehouse not found or access denied")
+        raise HTTPException(status_code=404, detail="Warehouse not found")
+    
+    return {"message": "Warehouse deleted successfully"}

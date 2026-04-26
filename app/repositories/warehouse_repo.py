@@ -2,7 +2,7 @@ import logging
 from uuid import uuid4
 from typing import Optional
 import asyncpg
-
+from fastapi import HTTPException
 from app.dto.warehouse import (
     WarehouseCreate,
     WarehouseRead,
@@ -23,11 +23,11 @@ async def create_warehouse(
             """
             INSERT INTO warehouses (
                 warehouse_id, user_id, warehouse_name, location, city, capacity, 
-                phone, manager_id, is_active, created_by, updated_by
+                phone, is_active, created_by, updated_by
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-            RETURNING warehouse_id, user_id, warehouse_name, location, city, capacity, phone, manager_id, is_active,
-                      created_at, updated_at, created_by, updated_by
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $9)
+            RETURNING warehouse_id, user_id, warehouse_name, location, city, capacity, phone, is_active,
+                    created_by, updated_by
             """,
             str(uuid4()), 
             user_id,
@@ -36,10 +36,8 @@ async def create_warehouse(
             data.city,
             data.capacity, 
             data.phone, 
-            data.manager_id, 
             data.is_active, 
-            created_by,
-            created_by,
+            created_by
         )
         return WarehouseRead(**dict(row))
 
@@ -63,7 +61,7 @@ async def get_warehouse(
 ) -> Optional[WarehouseRead]:
     try:
         query = """
-            SELECT warehouse_id, user_id, warehouse_name, location, city, capacity, phone, manager_id, is_active,
+            SELECT warehouse_id, user_id, warehouse_name, location, city, capacity, phone, is_active,
                    created_at, updated_at, created_by, updated_by
             FROM warehouses
             WHERE warehouse_id = $1 AND deleted = FALSE
@@ -89,7 +87,7 @@ async def list_warehouses(
 ) -> list[WarehouseRead]:
     try:
         query = """
-            SELECT warehouse_id, user_id, warehouse_name, location, city, capacity, phone, manager_id, is_active,
+            SELECT warehouse_id, user_id, warehouse_name, location, city, capacity, phone, is_active,
                    created_at, updated_at, created_by, updated_by
             FROM warehouses
             WHERE deleted = FALSE
@@ -125,22 +123,21 @@ async def update_warehouse(
                 city = COALESCE($3, city),
                 capacity = COALESCE($4, capacity),
                 phone = COALESCE($5, phone),
-                manager_id = COALESCE($6, manager_id),
-                is_active = COALESCE($7, is_active),
-                updated_by = $8,
+                is_active = COALESCE($6, is_active),
+                updated_by = $7,
                 updated_at = CURRENT_TIMESTAMP
-            WHERE warehouse_id = $9 AND deleted = FALSE
+            WHERE warehouse_id = $8 AND deleted = FALSE
         """
         params = [
             data.warehouse_name, data.location, data.city, data.capacity,
-            data.phone, data.manager_id, data.is_active, updated_by, warehouse_id,
+            data.phone, data.is_active, updated_by, warehouse_id,
         ]
         if user_id:
-            query += " AND user_id = $10"
+            query += " AND user_id = $9"
             params.append(user_id)
 
         query += """
-            RETURNING warehouse_id, user_id, warehouse_name, location, city, capacity, phone, manager_id, is_active,
+            RETURNING warehouse_id, user_id, warehouse_name, location, city, capacity, phone, is_active,
                       created_at, updated_at, created_by, updated_by
         """
         row = await conn.fetchrow(query, *params)

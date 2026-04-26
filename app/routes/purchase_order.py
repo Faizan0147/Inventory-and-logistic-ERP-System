@@ -30,12 +30,12 @@ async def get_purchase_order(po_id: str, conn: Conn, current_user: CurrentUser):
 
 
 
-@router.patch("/{po_id}", response_model=PurchaseOrderRead)
+@router.put("/{po_id}", response_model=PurchaseOrderRead)
 async def update_purchase_order(po_id: str, body: PurchaseOrderUpdate, conn: Conn, current_user: CurrentUser):
     return await purchase_order_controller.update_purchase_order(conn, po_id, body, current_user)
 
 
-@router.delete("/{po_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_purchase_order(po_id: str, conn: Conn, current_user: CurrentUser):
-    await purchase_order_controller.delete_purchase_order(conn, po_id, current_user)
+@router.delete("/{po_id}", status_code=200)
+async def delete_purchase_order(po_id: str, conn: Conn, current_user: CurrentUser) -> dict:
+    return await purchase_order_controller.delete_purchase_order(conn, po_id, current_user)
 

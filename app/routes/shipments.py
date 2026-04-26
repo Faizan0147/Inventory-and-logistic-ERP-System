@@ -29,11 +29,11 @@ async def get_shipment(shipment_id: str, conn: Conn, current_user: CurrentUser):
 
 
 
-@router.patch("/{shipment_id}", response_model=ShipmentRead)
+@router.put("/{shipment_id}", response_model=ShipmentRead)
 async def update_shipment(shipment_id: str, body: ShipmentUpdate, conn: Conn, current_user: CurrentUser):
     return await shipment_controller.update_shipment(conn, shipment_id, body, current_user)
 
 
-@router.delete("/{shipment_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_shipment(shipment_id: str, conn: Conn, current_user: CurrentUser):
-    await shipment_controller.delete_shipment(conn, shipment_id, current_user)
+@router.delete("/{shipment_id}", status_code=200)
+async def delete_shipment(shipment_id: str, conn: Conn, current_user: CurrentUser) -> dict:
+    return await shipment_controller.delete_shipment(conn, shipment_id, current_user)

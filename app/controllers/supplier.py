@@ -68,7 +68,7 @@ async def get_supplier(
         raise HTTPException(status_code=500, detail=str(e))
  
     if not supplier:
-        raise HTTPException(status_code=404, detail="Supplier not found or access denied")
+        raise HTTPException(status_code=404, detail="Supplier not found")
     return supplier
  
 async def update_supplier(  
@@ -92,14 +92,14 @@ async def update_supplier(
         raise HTTPException(status_code=500, detail=str(e))
  
     if not supplier:
-        raise HTTPException(status_code=404, detail="Supplier not found or access denied")
+        raise HTTPException(status_code=404, detail="Supplier not found")
     return supplier
   
 async def delete_supplier(
     conn: asyncpg.Connection,
     supplier_id: str,
     current_user: dict,
-    ) -> None:
+    ) -> dict:
 
     try:
         deleted = await supplier_repo.delete_supplier(
@@ -114,4 +114,6 @@ async def delete_supplier(
         raise HTTPException(status_code=500, detail=str(e))
  
     if not deleted:
-        raise HTTPException(status_code=404, detail="Supplier not found or access denied")
+        raise HTTPException(status_code=404, detail="Supplier not found")
+    
+    return {"message": "Supplier deleted successfully"}

@@ -80,7 +80,7 @@ async def update_po_item(
         raise HTTPException(status_code=500, detail=str(e))
 
     if not item:
-        raise HTTPException(status_code=404, detail="PO item not found or access denied")
+        raise HTTPException(status_code=404, detail="PO item not found")
     return item
 
 
@@ -88,7 +88,7 @@ async def delete_po_item(
     conn: asyncpg.Connection, 
     po_item_id: str, 
     current_user: dict
-) -> None:
+) -> dict:
     try:
         deleted = await poi_repo.delete_po_item(
             conn, po_item_id, 
@@ -100,4 +100,6 @@ async def delete_po_item(
         raise HTTPException(status_code=500, detail=str(e))
 
     if not deleted:
-        raise HTTPException(status_code=404, detail="PO item not found or access denied")
+        raise HTTPException(status_code=404, detail="PO item not found")
+    
+    return {"message": "Purchase order item deleted successfully"}

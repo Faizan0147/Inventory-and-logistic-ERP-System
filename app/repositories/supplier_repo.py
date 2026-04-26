@@ -2,13 +2,13 @@ from uuid import uuid4
 import logging
 from typing import Optional
 import asyncpg
+from fastapi import HTTPException
 
 from app.dto.supplier import (
     SupplierCreate,
     SupplierUpdate,
     SupplierRead,
 )
-
 
 logger = logging.getLogger(__name__)
 
@@ -124,6 +124,7 @@ async def update_supplier(
     ) -> Optional[SupplierRead]:
     
     try:
+
         row = await conn.fetchrow(
             """
             UPDATE suppliers
@@ -181,7 +182,10 @@ async def delete_supplier(
             deleted_by,
             user_id,
         )
-        return result == "UPDATE 1"
+        if result == "UPDATE 1":
+            return {"message": "Supplier deleted successfully"}
+        else:
+            raise HTTPException(status_code=404, detail="Supplier not found")
     
     except asyncpg.PostgresError as e:
         logger.error("delete_supplier(%s): database error — %s", supplier_id, e)

@@ -42,6 +42,7 @@ async def create_product(
             data.weight,
             data.status, 
             created_by,
+            created_by
         )
         return ProductRead(**dict(row))
 

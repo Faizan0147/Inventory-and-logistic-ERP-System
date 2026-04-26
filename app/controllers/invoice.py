@@ -83,7 +83,7 @@ async def update_invoice(
         raise HTTPException(status_code=500, detail=str(e))
 
     if not invoice:
-        raise HTTPException(status_code=404, detail="Invoice not found or access denied")
+        raise HTTPException(status_code=404, detail="Invoice not found")
     return invoice
 
 
@@ -91,7 +91,7 @@ async def delete_invoice(
     conn: asyncpg.Connection, 
     invoice_id: str, 
     current_user: dict
-) -> None:
+) -> dict:
     try:
         deleted = await invoice_repo.delete_invoice(
             conn, invoice_id, 
@@ -103,4 +103,6 @@ async def delete_invoice(
         raise HTTPException(status_code=500, detail=str(e))
 
     if not deleted:
-        raise HTTPException(status_code=404, detail="Invoice not found or access denied")
+        raise HTTPException(status_code=404, detail="Invoice not found")
+    
+    return {"message": "Invoice deleted successfully"}

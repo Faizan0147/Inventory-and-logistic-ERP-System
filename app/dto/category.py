@@ -4,7 +4,6 @@ from pydantic import BaseModel
 
 
 class CategoryCreate(BaseModel):
-    user_id: str
     category_name: str
     description: Optional[str] = None
     parent_category_id: Optional[str] = None

@@ -49,17 +49,19 @@ async def update_user(
         current_user_id=current_user_id,
     )
     if not user:
-        raise HTTPException(status_code=404, detail="User not found or access denied")
+        raise HTTPException(status_code=404, detail="User not found")
     return user
 
 
 async def delete_user(
     conn: asyncpg.Connection, user_id: str, current_user: dict
-) -> None:
+) -> dict:
     # SUPPLIER can only delete their own record
     current_user_id = current_user["user_id"] if current_user["role"] == "SUPPLIER" else None
     deleted = await users_repo.delete_user(
         conn, user_id, deleted_by=current_user["user_id"], current_user_id=current_user_id
     )
     if not deleted:
-        raise HTTPException(status_code=404, detail="User not found or access denied")
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return {"message": "User deleted successfully"}

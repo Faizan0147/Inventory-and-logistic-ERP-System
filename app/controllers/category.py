@@ -81,7 +81,7 @@ async def update_category(
         raise HTTPException(status_code=500, detail=str(e))
 
     if not category:
-        raise HTTPException(status_code=404, detail="Category not found or access denied")
+        raise HTTPException(status_code=404, detail="Category not found")
     return category
 
 
@@ -89,7 +89,7 @@ async def delete_category(
     conn: asyncpg.Connection, 
     category_id: str, 
     current_user: dict
-) -> None:
+) -> dict:
     try:
         deleted = await category_repo.delete_category(
             conn, category_id, 
@@ -101,4 +101,6 @@ async def delete_category(
         raise HTTPException(status_code=500, detail=str(e))
 
     if not deleted:
-        raise HTTPException(status_code=404, detail="Category not found or access denied")
+        raise HTTPException(status_code=404, detail="Category not found")
+    
+    return {"message": "Category deleted successfully"}

@@ -97,7 +97,7 @@ async def update_product(
 
 async def delete_product(
     conn: asyncpg.Connection, product_id: str, current_user: dict
-) -> None:
+) -> dict:
 
     try:
         deleted = await product_repo.delete_product(
@@ -112,3 +112,5 @@ async def delete_product(
 
     if not deleted:
         raise HTTPException(status_code=404, detail="Product not found or access denied")
+    
+    return {"message": "Product deleted successfully"}

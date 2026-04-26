@@ -35,13 +35,13 @@ async def get_invoice_item(invoice_item_id: str, conn: Conn, current_user: Curre
 
 
 
-@router.patch("/{invoice_item_id}", response_model=InvoiceItemRead)
+@router.put("/{invoice_item_id}", response_model=InvoiceItemRead)
 async def update_invoice_item(
     invoice_item_id: str, body: InvoiceItemUpdate, conn: Conn, current_user: CurrentUser
 ):
     return await invoice_item_controller.update_invoice_item(conn, invoice_item_id, body, current_user)
 
 
-@router.delete("/{invoice_item_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_invoice_item(invoice_item_id: str, conn: Conn, current_user: CurrentUser):
-    await invoice_item_controller.delete_invoice_item(conn, invoice_item_id, current_user)
+@router.delete("/{invoice_item_id}", status_code=200)
+async def delete_invoice_item(invoice_item_id: str, conn: Conn, current_user: CurrentUser) -> dict:
+    return await invoice_item_controller.delete_invoice_item(conn, invoice_item_id, current_user)
