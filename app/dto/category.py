@@ -15,12 +15,19 @@ class CategoryUpdate(BaseModel):
     parent_category_id: Optional[str] = None
 
 
+class ParentCategory(BaseModel):
+    category_id: str
+    category_name: str
+    description: Optional[str] = None
+
+
 class CategoryRead(BaseModel):
     category_id: str
     user_id: str
     category_name: str
     description: Optional[str] = None
     parent_category_id: Optional[str] = None
+    parent_category: Optional[ParentCategory] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     created_by: Optional[str] = None

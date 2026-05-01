@@ -6,38 +6,76 @@ import asyncpg
 from app.dto.category import (
     CategoryCreate,
     CategoryRead,
-    CategoryUpdate
+    CategoryUpdate,
+    ParentCategory,
 )
 
 logger = logging.getLogger(__name__)
 
+# Columns to select with LEFT JOIN on parent category
+_SELECT = """
+    SELECT
+        c.category_id, c.user_id, c.category_name, c.description,
+        c.parent_category_id,
+        c.created_at, c.updated_at, c.created_by, c.updated_by,
+        p.category_id   AS parent_id,
+        p.category_name AS parent_name,
+        p.description   AS parent_description
+    FROM categories c
+    LEFT JOIN categories p
+        ON p.category_id = c.parent_category_id AND p.deleted = FALSE
+"""
+
+
+def _build(row: asyncpg.Record) -> CategoryRead:
+    """Map a row (with optional parent columns) to CategoryRead."""
+    d = dict(row)
+    parent = None
+    if d.get("parent_id"):
+        parent = ParentCategory(
+            category_id=d["parent_id"],
+            category_name=d["parent_name"],
+            description=d["parent_description"],
+        )
+    return CategoryRead(
+        category_id=d["category_id"],
+        user_id=d["user_id"],
+        category_name=d["category_name"],
+        description=d["description"],
+        parent_category_id=d["parent_category_id"],
+        parent_category=parent,
+        created_at=d["created_at"],
+        updated_at=d["updated_at"],
+        created_by=d["created_by"],
+        updated_by=d["updated_by"],
+    )
+
 
 async def create_category(
-    conn: asyncpg.Connection, 
-    data: CategoryCreate, 
+    conn: asyncpg.Connection,
+    data: CategoryCreate,
     user_id: str,
-    created_by: Optional[str] = None
+    created_by: Optional[str] = None,
 ) -> CategoryRead:
     try:
         row = await conn.fetchrow(
             """
             INSERT INTO categories (
-                category_id, user_id, category_name, description, 
+                category_id, user_id, category_name, description,
                 parent_category_id, created_by, updated_by
             )
             VALUES ($1, $2, $3, $4, $5, $6, $7)
-            RETURNING category_id, user_id, category_name, description, parent_category_id,
-                      created_at, updated_at, created_by, updated_by
+            RETURNING category_id
             """,
-            str(uuid4()), 
+            str(uuid4()),
             user_id,
-            data.category_name, 
-            data.description, 
-            data.parent_category_id, 
+            data.category_name,
+            data.description,
+            data.parent_category_id,
             created_by,
             created_by,
         )
-        return CategoryRead(**dict(row))
+        return await get_category(conn, row["category_id"])
 
     except asyncpg.UniqueViolationError:
         logger.warning("create_category: duplicate category_name '%s'", data.category_name)
@@ -53,24 +91,19 @@ async def create_category(
 
 
 async def get_category(
-    conn: asyncpg.Connection, 
+    conn: asyncpg.Connection,
     category_id: str,
-    user_id: Optional[str] = None
+    user_id: Optional[str] = None,
 ) -> Optional[CategoryRead]:
     try:
-        query = """
-            SELECT category_id, user_id, category_name, description, parent_category_id,
-                   created_at, updated_at, created_by, updated_by
-            FROM categories
-            WHERE category_id = $1 AND deleted = FALSE
-        """
+        query = _SELECT + " WHERE c.category_id = $1 AND c.deleted = FALSE"
         params = [category_id]
         if user_id:
-            query += " AND user_id = $2"
+            query += " AND c.user_id = $2"
             params.append(user_id)
 
         row = await conn.fetchrow(query, *params)
-        return CategoryRead(**dict(row)) if row else None
+        return _build(row) if row else None
 
     except asyncpg.PostgresError as e:
         logger.error("get_category(%s): database error — %s", category_id, e)
@@ -78,27 +111,21 @@ async def get_category(
 
 
 async def list_categories(
-    conn: asyncpg.Connection, 
-    offset: int = 0, 
+    conn: asyncpg.Connection,
+    offset: int = 0,
     limit: int = 100,
-    user_id: Optional[str] = None
+    user_id: Optional[str] = None,
 ) -> list[CategoryRead]:
     try:
-        query = """
-            SELECT category_id, user_id, category_name, description, parent_category_id,
-                   created_at, updated_at, created_by, updated_by
-            FROM categories
-            WHERE deleted = FALSE
-        """
+        query = _SELECT + " WHERE c.deleted = FALSE"
         params = [limit, offset]
         if user_id:
-            query += " AND user_id = $3"
+            query += " AND c.user_id = $3"
             params.append(user_id)
 
-        query += " ORDER BY category_name LIMIT $1 OFFSET $2"
-
+        query += " ORDER BY c.category_name LIMIT $1 OFFSET $2"
         rows = await conn.fetch(query, *params)
-        return [CategoryRead(**dict(r)) for r in rows]
+        return [_build(r) for r in rows]
 
     except asyncpg.PostgresError as e:
         logger.error("list_categories: database error — %s", e)
@@ -106,21 +133,21 @@ async def list_categories(
 
 
 async def update_category(
-    conn: asyncpg.Connection, 
-    category_id: str, 
-    data: CategoryUpdate, 
+    conn: asyncpg.Connection,
+    category_id: str,
+    data: CategoryUpdate,
     updated_by: Optional[str] = None,
-    user_id: Optional[str] = None
+    user_id: Optional[str] = None,
 ) -> Optional[CategoryRead]:
     try:
         query = """
             UPDATE categories
             SET
-                category_name = COALESCE($1, category_name),
-                description = COALESCE($2, description),
+                category_name      = COALESCE($1, category_name),
+                description        = COALESCE($2, description),
                 parent_category_id = COALESCE($3, parent_category_id),
-                updated_by = $4,
-                updated_at = CURRENT_TIMESTAMP
+                updated_by         = $4,
+                updated_at         = CURRENT_TIMESTAMP
             WHERE category_id = $5 AND deleted = FALSE
         """
         params = [data.category_name, data.description, data.parent_category_id, updated_by, category_id]
@@ -128,12 +155,11 @@ async def update_category(
             query += " AND user_id = $6"
             params.append(user_id)
 
-        query += """
-            RETURNING category_id, user_id, category_name, description, parent_category_id,
-                      created_at, updated_at, created_by, updated_by
-        """
+        query += " RETURNING category_id"
         row = await conn.fetchrow(query, *params)
-        return CategoryRead(**dict(row)) if row else None
+        if not row:
+            return None
+        return await get_category(conn, row["category_id"])
 
     except asyncpg.UniqueViolationError:
         logger.warning("update_category(%s): duplicate category_name '%s'", category_id, data.category_name)
@@ -149,10 +175,10 @@ async def update_category(
 
 
 async def delete_category(
-    conn: asyncpg.Connection, 
-    category_id: str, 
+    conn: asyncpg.Connection,
+    category_id: str,
     deleted_by: Optional[str] = None,
-    user_id: Optional[str] = None
+    user_id: Optional[str] = None,
 ) -> bool:
     try:
         query = """

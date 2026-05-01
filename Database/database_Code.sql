@@ -2,7 +2,7 @@
 CREATE TABLE IF NOT EXISTS users (
     user_id TEXT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
-    email VARCHAR(100) UNIQUE NOT NULL,
+    email VARCHAR(100) NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     phone_number VARCHAR(20),
     role VARCHAR(20) CHECK (role IN ('SUPERADMIN', 'SUPPLIER')) NOT NULL,
@@ -108,7 +108,7 @@ CREATE TABLE IF NOT EXISTS products (
     user_id TEXT NOT NULL, 
     product_name VARCHAR(200) NOT NULL,
     description TEXT,
-    sku VARCHAR(100) NOT NULL UNIQUE,  
+    sku VARCHAR(100) NOT NULL,
     price NUMERIC(10,2) CHECK (price >= 0),
     cost_price NUMERIC(10,2) CHECK (cost_price >= 0),
     weight DECIMAL(10,3),
@@ -146,7 +146,7 @@ CREATE TABLE IF NOT EXISTS inventory (
     updated_by TEXT,   
     deleted BOOLEAN NOT NULL DEFAULT FALSE,
 
-    UNIQUE (product_id, warehouse_id),     
+    -- uniqueness enforced via partial index below
     FOREIGN KEY (product_id)
         REFERENCES products(product_id)
         ON DELETE CASCADE,
@@ -165,7 +165,7 @@ CREATE TABLE IF NOT EXISTS purchase_orders (
     po_id TEXT PRIMARY KEY,
     supplier_id TEXT NOT NULL,
     warehouse_id TEXT,
-    order_number VARCHAR(100) UNIQUE,
+    order_number VARCHAR(100),
     order_date DATE,
     expected_delivery DATE,
     total_amount NUMERIC(12,2),
@@ -231,7 +231,7 @@ CREATE TABLE IF NOT EXISTS invoices (
     invoice_id TEXT PRIMARY KEY,
     supplier_id TEXT NOT NULL,
     po_id TEXT,
-    invoice_number VARCHAR(100) UNIQUE,
+    invoice_number VARCHAR(100),
     invoice_date DATE,
     total_amount NUMERIC(12,2),
     status VARCHAR(50) CHECK (status IN           
@@ -292,7 +292,7 @@ CREATE TABLE IF NOT EXISTS customers (
     customer_name   VARCHAR(150) NOT NULL,
     contact_person  VARCHAR(100),
     phone           VARCHAR(20),
-    email           VARCHAR(100) UNIQUE,
+    email           VARCHAR(100),
     address         TEXT,
     customer_type   VARCHAR(20) CHECK (customer_type IN ('Individual', 'Business')) DEFAULT 'Business',
 
@@ -314,7 +314,7 @@ CREATE TABLE IF NOT EXISTS shipments (
     carrier_name VARCHAR(100) CHECK (carrier_name IN (
         'DHL', 'FedEx', 'UPS', 'Aramex'
     )),
-    tracking_number VARCHAR(100) UNIQUE,
+    tracking_number VARCHAR(100),
     shipment_date DATE,
     estimated_arrival DATE,
     actual_arrival DATE,
@@ -382,3 +382,25 @@ CREATE INDEX IF NOT EXISTS idx_shipment_user        ON shipments(user_id);
 CREATE INDEX IF NOT EXISTS idx_invoice_date_status  ON invoices(invoice_date, status);
 CREATE INDEX IF NOT EXISTS idx_shipment_status      ON shipments(status);
 CREATE INDEX IF NOT EXISTS idx_po_status            ON purchase_orders(status);
+
+-- Partial unique indexes: enforce uniqueness only among non-deleted rows
+CREATE UNIQUE INDEX IF NOT EXISTS uq_users_email_active
+    ON users(email) WHERE deleted = FALSE;
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_products_sku_active
+    ON products(sku) WHERE deleted = FALSE;
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_inventory_product_warehouse_active
+    ON inventory(product_id, warehouse_id) WHERE deleted = FALSE;
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_po_order_number_active
+    ON purchase_orders(order_number) WHERE deleted = FALSE;
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_invoices_invoice_number_active
+    ON invoices(invoice_number) WHERE deleted = FALSE;
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_customers_email_active
+    ON customers(email) WHERE deleted = FALSE;
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_shipments_tracking_number_active
+    ON shipments(tracking_number) WHERE deleted = FALSE;

@@ -1,10 +1,30 @@
 from typing import Optional, Literal
 from datetime import datetime, date
+from decimal import Decimal
 from pydantic import BaseModel
 
 CarrierName = Literal["DHL", "FedEx", "UPS", "Aramex"]
 ShipmentStatus = Literal["Pending", "In Transit", "Delivered", "Returned", "Cancelled"]
 
+
+# ── Nested summary models ────────────────────────────────────────────
+
+class PurchaseOrderSummary(BaseModel):
+    po_id: str
+    order_number: Optional[str] = None
+    order_date: Optional[date] = None
+    status: Optional[str] = None
+    supplier_id: Optional[str] = None
+
+
+class WarehouseSummary(BaseModel):
+    warehouse_id: str
+    warehouse_name: str
+    location: Optional[str] = None
+    city: Optional[str] = None
+
+
+# ── Shipment DTOs ────────────────────────────────────────────────────
 
 class ShipmentCreate(BaseModel):
     purchase_order_id: str
@@ -40,6 +60,9 @@ class ShipmentRead(BaseModel):
     actual_arrival: Optional[date] = None
     status: Optional[str] = None
     notes: Optional[str] = None
+    # Nested
+    purchase_order: Optional[PurchaseOrderSummary] = None
+    warehouse: Optional[WarehouseSummary] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     created_by: Optional[str] = None

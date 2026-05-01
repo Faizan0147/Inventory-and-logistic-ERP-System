@@ -48,17 +48,24 @@ async def get_user_by_email(conn: asyncpg.Connection, email: str) -> Optional[di
     return dict(row) if row else None
 
 
-async def get_user(conn: asyncpg.Connection, user_id: str) -> Optional[UserRead]:
+async def get_user(
+    conn: asyncpg.Connection,
+    user_id: str,
+    current_user_id: Optional[str] = None,
+) -> Optional[UserRead]:
     logger.debug("Fetching user by user_id=%s", user_id)
-    row = await conn.fetchrow(
-        """
+    query = """
         SELECT user_id, name, email, phone_number, role, is_active,
                created_at, updated_at, created_by, updated_by
         FROM   users
         WHERE  user_id = $1 AND deleted = FALSE
-        """,
-        user_id,
-    )
+    """
+    params = [user_id]
+    if current_user_id:
+        query += " AND user_id = $2"
+        params.append(current_user_id)
+
+    row = await conn.fetchrow(query, *params)
     return UserRead(**dict(row)) if row else None
 
 
@@ -90,10 +97,10 @@ async def update_user(
     data: UserUpdate,
     password_hash: Optional[str] = None,
     updated_by: Optional[str] = None,
+    current_user_id: Optional[str] = None,
 ) -> Optional[UserRead]:
     logger.debug("Updating user user_id=%s", user_id)
-    row = await conn.fetchrow(
-        """
+    query = """
         UPDATE users
         SET
             name          = COALESCE($1, name),
@@ -105,26 +112,39 @@ async def update_user(
             updated_by    = $7,
             updated_at    = CURRENT_TIMESTAMP
         WHERE user_id = $8 AND deleted = FALSE
-        RETURNING user_id, name, email, phone_number, role, is_active,
-                  created_at, updated_at, created_by, updated_by
-        """,
+    """
+    params = [
         data.name, data.email, password_hash, data.phone_number,
         data.role, data.is_active, updated_by, user_id,
-    )
+    ]
+    if current_user_id:
+        query += " AND user_id = $9"
+        params.append(current_user_id)
+
+    query += """
+        RETURNING user_id, name, email, phone_number, role, is_active,
+                  created_at, updated_at, created_by, updated_by
+    """
+    row = await conn.fetchrow(query, *params)
     return UserRead(**dict(row)) if row else None
 
 
 async def delete_user(
-    conn: asyncpg.Connection, user_id: str, deleted_by: Optional[str] = None
+    conn: asyncpg.Connection,
+    user_id: str,
+    deleted_by: Optional[str] = None,
+    current_user_id: Optional[str] = None,
 ) -> bool:
     logger.debug("Soft-deleting user user_id=%s", user_id)
-    result = await conn.execute(
-        """
+    query = """
         UPDATE users
         SET deleted = TRUE, updated_at = CURRENT_TIMESTAMP, updated_by = $2
         WHERE user_id = $1 AND deleted = FALSE
-        """,
-        user_id,
-        deleted_by,
-    )
+    """
+    params = [user_id, deleted_by]
+    if current_user_id:
+        query += " AND user_id = $3"
+        params.append(current_user_id)
+
+    result = await conn.execute(query, *params)
     return result == "UPDATE 1"

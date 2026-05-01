@@ -2,7 +2,6 @@ from uuid import uuid4
 import logging
 from typing import Optional
 import asyncpg
-from fastapi import HTTPException
 
 from app.dto.supplier import (
     SupplierCreate,
@@ -124,9 +123,7 @@ async def update_supplier(
     ) -> Optional[SupplierRead]:
     
     try:
-
-        row = await conn.fetchrow(
-            """
+        query = """
             UPDATE suppliers
             SET
                 supplier_name = COALESCE($1, supplier_name),
@@ -138,11 +135,8 @@ async def update_supplier(
                 updated_at    = CURRENT_TIMESTAMP
             WHERE supplier_id = $7
               AND deleted = FALSE
-              AND user_id = $8
-            RETURNING supplier_id, user_id, supplier_name, contact_email,
-                      contact_phone, address, status,
-                      created_at, updated_at, created_by, updated_by
-            """,
+        """
+        params = [
             data.supplier_name,
             data.contact_email,
             data.contact_phone,
@@ -150,8 +144,17 @@ async def update_supplier(
             data.status,
             updated_by,
             supplier_id,
-            user_id,
-        )
+        ]
+        if user_id:
+            query += " AND user_id = $8"
+            params.append(user_id)
+
+        query += """
+            RETURNING supplier_id, user_id, supplier_name, contact_email,
+                      contact_phone, address, status,
+                      created_at, updated_at, created_by, updated_by
+        """
+        row = await conn.fetchrow(query, *params)
         return SupplierRead(**dict(row)) if row else None
         
     except asyncpg.UniqueViolationError:
@@ -170,22 +173,19 @@ async def delete_supplier(
     ) -> bool:
 
     try:
-        result = await conn.execute(
-            """
+        query = """
             UPDATE suppliers
             SET deleted = TRUE, updated_at = CURRENT_TIMESTAMP, updated_by = $2
             WHERE supplier_id = $1
               AND deleted = FALSE
-              AND user_id = $3
-            """,
-            supplier_id,
-            deleted_by,
-            user_id,
-        )
-        if result == "UPDATE 1":
-            return {"message": "Supplier deleted successfully"}
-        else:
-            raise HTTPException(status_code=404, detail="Supplier not found")
+        """
+        params = [supplier_id, deleted_by]
+        if user_id:
+            query += " AND user_id = $3"
+            params.append(user_id)
+
+        result = await conn.execute(query, *params)
+        return result == "UPDATE 1"
     
     except asyncpg.PostgresError as e:
         logger.error("delete_supplier(%s): database error — %s", supplier_id, e)

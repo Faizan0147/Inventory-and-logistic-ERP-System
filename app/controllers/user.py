@@ -1,9 +1,13 @@
+import logging
 from fastapi import HTTPException
 import asyncpg
 
 from app.utils.security import hash_password
+from app.utils.email import send_credentials_email
 from app.dto.users import UserCreate, UserUpdate, UserRead
 from app.repositories import users_repo
+
+logger = logging.getLogger(__name__)
 
 
 async def create_user(
@@ -12,9 +16,20 @@ async def create_user(
     current_user: dict,
 ) -> UserRead:
     hashed = hash_password(body.password)
-    return await users_repo.create_user(
+    user = await users_repo.create_user(
         conn, body, hashed, created_by=current_user["user_id"]
     )
+
+    try:
+        await send_credentials_email(
+            to_email=body.email,
+            name=body.name,
+            password=body.password,
+        )
+    except Exception as e:
+        logger.warning("User created but email failed for %s: %s", body.email, e)
+
+    return user
 
 
 async def list_users(

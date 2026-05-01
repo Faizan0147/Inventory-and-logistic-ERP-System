@@ -1,8 +1,26 @@
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, date
 from decimal import Decimal
 from pydantic import BaseModel, Field
 
+
+# ── Nested summary models ────────────────────────────────────────────
+
+class PurchaseOrderSummary(BaseModel):
+    po_id: str
+    order_number: Optional[str] = None
+    order_date: Optional[date] = None
+    status: Optional[str] = None
+
+
+class ProductSummary(BaseModel):
+    product_id: str
+    product_name: str
+    sku: str
+    price: Optional[Decimal] = None
+
+
+# ── PO Item DTOs ─────────────────────────────────────────────────────
 
 class POItemCreate(BaseModel):
     po_id: str
@@ -25,6 +43,9 @@ class POItemRead(BaseModel):
     user_id: str
     quantity: int
     price: Optional[Decimal] = None
+    # Nested
+    purchase_order: Optional[PurchaseOrderSummary] = None
+    product: Optional[ProductSummary] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     created_by: Optional[str] = None
