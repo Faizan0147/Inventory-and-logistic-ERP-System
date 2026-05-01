@@ -8,7 +8,7 @@ from app.dto.shipments import ShipmentCreate, ShipmentUpdate, ShipmentRead
 logger = logging.getLogger(__name__)
 
 _RETURNING = """
-    RETURNING shipment_id, purchase_order_id, user_id, warehouse_id, carrier_name,
+    RETURNING shipment_id, po_id, user_id, warehouse_id, carrier_name,
               tracking_number, shipment_date, estimated_arrival, actual_arrival,
               status, notes, created_at, updated_at, created_by, updated_by
 """
@@ -25,7 +25,7 @@ async def create_shipment(
         row = await conn.fetchrow(
             f"""
             INSERT INTO shipments (
-                shipment_id, purchase_order_id, warehouse_id, user_id,
+                shipment_id, po_id, warehouse_id, user_id,
                 carrier_name, tracking_number, shipment_date,
                 estimated_arrival, status, notes, created_by, updated_by
             )
@@ -67,7 +67,7 @@ async def get_shipment(
 
     try:
         query = f"""
-            SELECT shipment_id, purchase_order_id, user_id, warehouse_id, carrier_name,
+            SELECT shipment_id, po_id, user_id, warehouse_id, carrier_name,
                    tracking_number, shipment_date, estimated_arrival, actual_arrival,
                    status, notes, created_at, updated_at, created_by, updated_by
             FROM shipments
@@ -96,7 +96,7 @@ async def list_shipments(
 
     try:
         query = """
-            SELECT shipment_id, purchase_order_id, user_id, warehouse_id, carrier_name,
+            SELECT shipment_id, po_id, user_id, warehouse_id, carrier_name,
                    tracking_number, shipment_date, estimated_arrival, actual_arrival,
                    status, notes, created_at, updated_at, created_by, updated_by
             FROM shipments

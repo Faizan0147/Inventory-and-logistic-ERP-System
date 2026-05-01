@@ -1,20 +1,20 @@
 from typing import Optional
 from datetime import datetime
 from decimal import Decimal
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class POItemCreate(BaseModel):
     po_id: str
     product_id: str
-    quantity: int
+    quantity: int = Field(..., gt=0, description="Quantity must be greater than 0")
     price: Optional[Decimal] = None
 
 
 class POItemUpdate(BaseModel):
     po_id: Optional[str] = None
     product_id: Optional[str] = None
-    quantity: Optional[int] = None
+    quantity: Optional[int] = Field(None, gt=0, description="Quantity must be greater than 0")
     price: Optional[Decimal] = None
 
 

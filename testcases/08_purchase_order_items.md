@@ -99,7 +99,7 @@ Expected: 200 — PO item object
 GET /api/v1/poi/{po_id}/items/non-existent-id
 Expected: 404 — {"detail": "PO item not found"}
 ```
-
+```Error here```
 ---
 
 ## 4. UPDATE (PUT `/{po_id}/items/{po_item_id}`)

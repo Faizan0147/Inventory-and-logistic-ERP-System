@@ -54,7 +54,6 @@ Expected: 422 — {"detail": "product_id is required"}
 }
 Expected: 422 — {"detail": "quantity is required"}
 ```
-
 **1.6 Zero or Negative Quantity**
 ```json
 {

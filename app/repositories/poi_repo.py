@@ -38,6 +38,10 @@ async def create_po_item(
         logger.warning("create_po_item: foreign key violation — %s", e)
         raise ValueError("Invalid po_id or product_id.")
 
+    except asyncpg.CheckViolationError as e:
+        logger.warning("create_po_item: check constraint violation — %s", e)
+        raise ValueError("Quantity must be greater than 0.")
+
     except asyncpg.PostgresError as e:
         logger.error("create_po_item: database error — %s", e)
         raise RuntimeError(f"Database error while creating purchase order item: {e}")
@@ -127,6 +131,10 @@ async def update_po_item(
     except asyncpg.ForeignKeyViolationError as e:
         logger.warning("update_po_item(%s): foreign key violation — %s", po_item_id, e)
         raise ValueError("Invalid po_id or product_id.")
+
+    except asyncpg.CheckViolationError as e:
+        logger.warning("update_po_item(%s): check constraint violation — %s", po_item_id, e)
+        raise ValueError("Quantity must be greater than 0.")
 
     except asyncpg.PostgresError as e:
         logger.error("update_po_item(%s): database error — %s", po_item_id, e)

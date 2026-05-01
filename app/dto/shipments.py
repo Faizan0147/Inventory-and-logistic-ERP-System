@@ -30,7 +30,7 @@ class ShipmentUpdate(BaseModel):
 
 class ShipmentRead(BaseModel):
     shipment_id: str
-    purchase_order_id: str
+    po_id: str
     user_id: str
     warehouse_id: Optional[str] = None
     carrier_name: Optional[str] = None
