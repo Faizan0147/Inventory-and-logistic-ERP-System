@@ -14,8 +14,8 @@ from app.routes import (
     poi,
     customers,
     shipments,
+    langchain_chat
 )
-
 api_router = APIRouter()
 
 api_router.include_router(auth.router, prefix="/auth", tags=["Auth"])
@@ -36,3 +36,4 @@ api_router.include_router(
 )
 api_router.include_router(customers.router, prefix="/customers", tags=["Customers"])
 api_router.include_router(shipments.router, prefix="/shipments", tags=["Shipments"])
+api_router.include_router(langchain_chat.router, prefix="/chat", tags=["Chat"])

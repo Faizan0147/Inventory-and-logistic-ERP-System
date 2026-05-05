@@ -11,6 +11,9 @@ class Settings(BaseSettings):
     SMTP_USER: str = ""
     SMTP_PASSWORD: str = ""
     SMTP_FROM_EMAIL: str = "umerfaisal132@gmail.com"
+    GROQ_API_KEY: str = ""
+    GROQ_MODEL: str = "llama-3.3-70b-versatile"
+    TOOL_CALL_MAX_STEPS: int = 30
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 

@@ -1,0 +1,26 @@
+from typing import Optional
+from langchain_core.tools import tool
+from app.langchain_agent.database_tools import (
+    list_tables_direct,
+    fetch_schema_direct,
+    execute_sql_query_direct,
+)
+
+@tool
+async def list_tables() -> str:
+    """Returns all database table names. Call this first to discover available tables."""
+    return await list_tables_direct()
+
+
+@tool
+async def fetch_schema(table_name: str) -> str:
+    """Returns column definitions for a given table. Call after list_tables."""
+    return await fetch_schema_direct(table_name)
+
+
+@tool
+async def execute_sql_query(sql: str, params: Optional[list] = None) -> str:
+    """Execute a SQL query with automatic role-based access control."""
+    return await execute_sql_query_direct(sql, params or [])
+
+ALL_TOOLS = [list_tables, fetch_schema, execute_sql_query]
