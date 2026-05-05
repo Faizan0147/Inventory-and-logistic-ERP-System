@@ -1,9 +1,11 @@
 import logging
+from datetime import datetime
 from fastapi import HTTPException
 import asyncpg
 
 from app.dto.shipments import ShipmentCreate, ShipmentUpdate, ShipmentRead
 from app.repositories import shipments_repo
+from app.utils.tracking_number import generate_tracking_number
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +21,23 @@ async def create_shipment(
 ) -> ShipmentRead:
 
     try:
+        # Auto-generate tracking number if not provided
+        if not data.tracking_number:
+    
+            shipment_datetime = None
+            if data.shipment_date:
+                shipment_datetime = datetime.combine(data.shipment_date, datetime.min.time())
+            
+            data.tracking_number = await generate_tracking_number(
+                conn=conn,
+                carrier=data.carrier_name,
+                shipment_date=shipment_datetime
+            )
+            logger.info(
+                f"Auto-generated tracking number: {data.tracking_number} "
+                f"for carrier: {data.carrier_name}"
+            )
+        
         return await shipments_repo.create_shipment(
             conn,
             data,
