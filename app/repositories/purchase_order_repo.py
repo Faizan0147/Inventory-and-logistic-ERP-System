@@ -13,12 +13,23 @@ from app.dto.purchase_order import (
 
 logger = logging.getLogger(__name__)
 
+_SELECT = """
+    SELECT
+        po.po_id, po.supplier_id, po.user_id, po.warehouse_id,
+        po.order_number, po.order_date, po.expected_delivery,
+        po.total_amount, po.status,
+        po.created_at, po.updated_at, po.created_by, po.updated_by,
+        s.supplier_name, s.contact_email, s.contact_phone,
+        w.warehouse_name, w.location, w.city
+    FROM purchase_orders po
+    LEFT JOIN suppliers s ON s.supplier_id = po.supplier_id AND s.deleted = FALSE
+    LEFT JOIN warehouses w ON w.warehouse_id = po.warehouse_id AND w.deleted = FALSE
+"""
+
 
 def _build(row: asyncpg.Record) -> PurchaseOrderRead:
     d = dict(row)
-
     supplier = None
-    
     if d.get("supplier_name"):
         supplier = SupplierSummary(
             supplier_id=d["supplier_id"],
@@ -78,11 +89,9 @@ async def create_purchase_order(
     except asyncpg.UniqueViolationError:
         logger.warning("create_purchase_order: duplicate order_number '%s'", data.order_number)
         raise ValueError(f"A purchase order with number '{data.order_number}' already exists.")
-
     except asyncpg.ForeignKeyViolationError as e:
         logger.warning("create_purchase_order: foreign key violation — %s", e)
         raise ValueError("Invalid supplier_id or warehouse_id.")
-
     except asyncpg.PostgresError as e:
         logger.error("create_purchase_order: database error — %s", e)
         raise RuntimeError(f"Database error while creating purchase order: {e}")
@@ -94,24 +103,13 @@ async def get_purchase_order(
     user_id: Optional[str] = None,
 ) -> Optional[PurchaseOrderRead]:
     try:
-        query = """"SELECT
-        po.po_id, po.supplier_id, po.user_id, po.warehouse_id,
-        po.order_number, po.order_date, po.expected_delivery,
-        po.total_amount, po.status,
-        po.created_at, po.updated_at, po.created_by, po.updated_by,
-        s.supplier_name, s.contact_email, s.contact_phone,
-        w.warehouse_name, w.location, w.city
-        FROM purchase_orders po
-        LEFT JOIN suppliers s ON s.supplier_id = po.supplier_id AND s.deleted = FALSE
-        LEFT JOIN warehouses w ON w.warehouse_id = po.warehouse_id AND w.deleted = FALSE WHERE po.po_id = $1 AND po.deleted = FALSE"""
-
+        query = _SELECT + " WHERE po.po_id = $1 AND po.deleted = FALSE"
         params = [po_id]
         if user_id:
             query += " AND po.user_id = $2"
             params.append(user_id)
         row = await conn.fetchrow(query, *params)
         return _build(row) if row else None
-
     except asyncpg.PostgresError as e:
         logger.error("get_purchase_order(%s): database error — %s", po_id, e)
         raise RuntimeError(f"Database error while fetching purchase order: {e}")
@@ -124,18 +122,7 @@ async def list_purchase_orders(
     user_id: Optional[str] = None,
 ) -> list[PurchaseOrderRead]:
     try:
-        query =""" SELECT
-        po.po_id, po.supplier_id, po.user_id, po.warehouse_id,
-        po.order_number, po.order_date, po.expected_delivery,
-        po.total_amount, po.status,
-        po.created_at, po.updated_at, po.created_by, po.updated_by,
-        s.supplier_name, s.contact_email, s.contact_phone,
-        w.warehouse_name, w.location, w.city
-    FROM purchase_orders po
-    LEFT JOIN suppliers s ON s.supplier_id = po.supplier_id AND s.deleted = FALSE
-    LEFT JOIN warehouses w ON w.warehouse_id = po.warehouse_id AND w.deleted = FALSE 
-    WHERE po.deleted = FALSE"""
-
+        query = _SELECT + " WHERE po.deleted = FALSE"
         params = [limit, offset]
         if user_id:
             query += " AND po.user_id = $3"
@@ -143,7 +130,6 @@ async def list_purchase_orders(
         query += " ORDER BY po.order_date DESC LIMIT $1 OFFSET $2"
         rows = await conn.fetch(query, *params)
         return [_build(r) for r in rows]
-
     except asyncpg.PostgresError as e:
         logger.error("list_purchase_orders: database error — %s", e)
         raise RuntimeError(f"Database error while listing purchase orders: {e}")
@@ -175,13 +161,11 @@ async def update_purchase_order(
             data.supplier_id, data.warehouse_id, data.order_number, data.order_date,
             data.expected_delivery, data.total_amount, data.status, updated_by, po_id,
         ]
-        
         if user_id:
             query += " AND user_id = $10"
             params.append(user_id)
         query += " RETURNING po_id"
         row = await conn.fetchrow(query, *params)
-
         if not row:
             return None
         return await get_purchase_order(conn, row["po_id"])
@@ -189,11 +173,9 @@ async def update_purchase_order(
     except asyncpg.UniqueViolationError:
         logger.warning("update_purchase_order(%s): duplicate order_number '%s'", po_id, data.order_number)
         raise ValueError(f"A purchase order with number '{data.order_number}' already exists.")
-
     except asyncpg.ForeignKeyViolationError as e:
         logger.warning("update_purchase_order(%s): foreign key violation — %s", po_id, e)
         raise ValueError("Invalid supplier_id or warehouse_id.")
-        
     except asyncpg.PostgresError as e:
         logger.error("update_purchase_order(%s): database error — %s", po_id, e)
         raise RuntimeError(f"Database error while updating purchase order: {e}")

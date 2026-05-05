@@ -30,8 +30,8 @@ class RegistrationRequestRead(BaseModel):
 
 
 class ApproveRequestBody(BaseModel):
-    role: str  # "SUPERADMIN" or "SUPPLIER"
-    supplier_id: Optional[str] = None
+    """Empty body for approval endpoint - role is automatically set to SUPPLIER"""
+    pass
 
 
 
