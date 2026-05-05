@@ -7,7 +7,7 @@ from asyncpg.exceptions import UniqueViolationError
 
 from app.utils.security import hash_password
 from app.utils.email import send_credentials_email
-from app.dto.auth import ApproveRequestBody, RegistrationRequestRead
+from app.dto.auth import RegistrationRequestRead
 from app.dto.users import UserCreate, UserRead
 from app.repositories import auth_repo, users_repo
 
@@ -26,7 +26,7 @@ async def list_pending_requests(conn: asyncpg.Connection) -> list[RegistrationRe
 
 
 async def approve_request(
-    conn: asyncpg.Connection, request_id: str, body: ApproveRequestBody, current_user: dict
+    conn: asyncpg.Connection, request_id: str, current_user: dict
 ) -> UserRead:
     logger.info("Admin %s approving request_id=%s (role will be set to SUPPLIER)", current_user["user_id"], request_id)
 

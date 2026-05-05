@@ -394,7 +394,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_inventory_product_warehouse_active
     ON inventory(product_id, warehouse_id) WHERE deleted = FALSE;
 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_po_order_number_active
-    ON purchase_orders(order_number) WHERE deleted = FALSE;
+    ON purchase_orders(user_id, order_number) WHERE deleted = FALSE;
 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_invoices_invoice_number_active
     ON invoices(invoice_number) WHERE deleted = FALSE;

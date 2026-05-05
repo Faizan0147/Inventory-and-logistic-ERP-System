@@ -22,7 +22,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_inventory_product_warehouse_active
 -- 4. purchase_orders.order_number
 ALTER TABLE purchase_orders DROP CONSTRAINT IF EXISTS purchase_orders_order_number_key;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_po_order_number_active
-    ON purchase_orders(order_number) WHERE deleted = FALSE;
+    ON purchase_orders(user_id, order_number) WHERE deleted = FALSE;
 
 -- 5. invoices.invoice_number
 ALTER TABLE invoices DROP CONSTRAINT IF EXISTS invoices_invoice_number_key;

@@ -6,7 +6,7 @@ import asyncpg
 
 from app.database import get_connection
 from app.utils.dependencies import require_role
-from app.dto.auth import ApproveRequestBody, RegistrationRequestRead
+from app.dto.auth import RegistrationRequestRead
 from app.dto.users import UserRead
 from app.controllers import admin as admin_controller
 
@@ -30,10 +30,10 @@ async def list_requests(current_user: SuperAdmin, conn: Conn):
 
 @router.post("/registration-requests/{request_id}/approve", response_model=UserRead)
 async def approve_request(
-    request_id: str, body: ApproveRequestBody, current_user: SuperAdmin, conn: Conn
+    request_id: str, current_user: SuperAdmin, conn: Conn
 ):
     try:
-        return await admin_controller.approve_request(conn, request_id, body, current_user)
+        return await admin_controller.approve_request(conn, request_id, current_user)
 
     except HTTPException:
         raise

@@ -21,8 +21,8 @@ _SELECT = """
         po.order_number, po.order_date, po.status AS po_status,
         p.product_name, p.sku, p.price AS product_price
     FROM purchase_order_items pi
-    LEFT JOIN purchase_orders po ON po.po_id = pi.po_id AND po.deleted = FALSE
-    LEFT JOIN products p ON p.product_id = pi.product_id AND p.deleted = FALSE
+    LEFT JOIN purchase_orders po ON po.po_id = pi.po_id AND po.user_id = pi.user_id AND po.deleted = FALSE
+    LEFT JOIN products p ON p.product_id = pi.product_id AND p.user_id = pi.user_id AND p.deleted = FALSE
 """
 
 
