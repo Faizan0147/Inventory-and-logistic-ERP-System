@@ -124,9 +124,14 @@ async def update_customer(
             WHERE customer_id = $8 AND deleted = FALSE
         """
         params = [
-            data.customer_name, data.contact_person, data.phone,
-            data.email, data.address, data.customer_type,
-            updated_by, customer_id,
+            data.customer_name,
+            data.contact_person,
+            data.phone,
+            data.email,
+            data.address,
+            data.customer_type,
+            updated_by,
+            customer_id,
         ]
         if user_id:
             query += " AND user_id = $9"
@@ -137,7 +142,9 @@ async def update_customer(
         return CustomerRead(**dict(row)) if row else None
 
     except asyncpg.UniqueViolationError:
-        logger.warning("update_customer(%s): duplicate email '%s'", customer_id, data.email)
+        logger.warning(
+            "update_customer(%s): duplicate email '%s'", customer_id, data.email
+        )
         raise ValueError(f"A customer with email '{data.email}' already exists.")
 
     except asyncpg.PostgresError as e:

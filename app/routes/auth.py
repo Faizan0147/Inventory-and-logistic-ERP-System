@@ -19,7 +19,11 @@ logger = logging.getLogger(__name__)
 Conn = Annotated[asyncpg.Connection, Depends(get_connection)]
 
 
-@router.post("/register", response_model=RegistrationRequestRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/register",
+    response_model=RegistrationRequestRead,
+    status_code=status.HTTP_201_CREATED,
+)
 async def register(body: RegistrationRequestCreate, conn: Conn, request: Request):
     try:
         return await auth_controller.register(conn, body)
@@ -27,7 +31,12 @@ async def register(body: RegistrationRequestCreate, conn: Conn, request: Request
     except HTTPException:
         raise
     except Exception as exc:
-        logger.error("Unexpected error in POST /register email=%s: %s", body.email, exc, exc_info=True)
+        logger.error(
+            "Unexpected error in POST /register email=%s: %s",
+            body.email,
+            exc,
+            exc_info=True,
+        )
         raise HTTPException(status_code=500, detail="An unexpected error occurred")
 
 
@@ -36,9 +45,14 @@ async def login(body: LoginRequest, conn: Conn, request: Request):
 
     try:
         return await auth_controller.login(conn, body)
-        
+
     except HTTPException:
         raise
     except Exception as exc:
-        logger.error("Unexpected error in POST /login email=%s: %s", body.email, exc, exc_info=True)
+        logger.error(
+            "Unexpected error in POST /login email=%s: %s",
+            body.email,
+            exc,
+            exc_info=True,
+        )
         raise HTTPException(status_code=500, detail="An unexpected error occurred")

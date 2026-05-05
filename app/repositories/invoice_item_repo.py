@@ -45,7 +45,7 @@ def _build(row: asyncpg.Record) -> InvoiceItemRead:
             sku=d["sku"],
             price=d.get("product_price"),
         )
-        
+
     return InvoiceItemRead(
         invoice_item_id=d["invoice_item_id"],
         invoice_id=d["invoice_id"],
@@ -78,8 +78,13 @@ async def create_invoice_item(
             VALUES ($1, $2, $3, $4, $5, $6, $7, $7)
             RETURNING invoice_item_id
             """,
-            str(uuid4()), data.invoice_id, data.product_id,
-            data.quantity, data.price, user_id, created_by,
+            str(uuid4()),
+            data.invoice_id,
+            data.product_id,
+            data.quantity,
+            data.price,
+            user_id,
+            created_by,
         )
         return await get_invoice_item(conn, row["invoice_item_id"])
 

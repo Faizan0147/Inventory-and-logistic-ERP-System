@@ -20,21 +20,32 @@ async def create_supplier(body: SupplierCreate, conn: Conn, current_user: Curren
 
 
 @router.get("/", response_model=list[SupplierRead])
-async def list_suppliers(conn: Conn, current_user: CurrentUser, offset: int = 0, limit: int = 100):
-    return await supplier_controller.list_suppliers(conn, offset, limit, current_user=current_user)
+async def list_suppliers(
+    conn: Conn, current_user: CurrentUser, offset: int = 0, limit: int = 100
+):
+    return await supplier_controller.list_suppliers(
+        conn, offset, limit, current_user=current_user
+    )
 
 
 @router.get("/{supplier_id}", response_model=SupplierRead)
 async def get_supplier(supplier_id: str, conn: Conn, current_user: CurrentUser):
-    return await supplier_controller.get_supplier(conn, supplier_id, current_user=current_user)
-
+    return await supplier_controller.get_supplier(
+        conn, supplier_id, current_user=current_user
+    )
 
 
 @router.put("/{supplier_id}", response_model=SupplierRead)
-async def update_supplier(supplier_id: str, body: SupplierUpdate, conn: Conn, current_user: CurrentUser):
-    return await supplier_controller.update_supplier(conn, supplier_id, body, current_user)
+async def update_supplier(
+    supplier_id: str, body: SupplierUpdate, conn: Conn, current_user: CurrentUser
+):
+    return await supplier_controller.update_supplier(
+        conn, supplier_id, body, current_user
+    )
 
 
 @router.delete("/{supplier_id}", status_code=200)
-async def delete_supplier(supplier_id: str, conn: Conn, current_user: CurrentUser) -> dict:
+async def delete_supplier(
+    supplier_id: str, conn: Conn, current_user: CurrentUser
+) -> dict:
     return await supplier_controller.delete_supplier(conn, supplier_id, current_user)

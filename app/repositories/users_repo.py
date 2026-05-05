@@ -70,10 +70,9 @@ async def get_user(
 
 
 async def list_users(
-    conn: asyncpg.Connection, 
-    offset: int = 0, 
+    conn: asyncpg.Connection,
+    offset: int = 0,
     limit: int = 100,
-    
 ) -> list[UserRead]:
     logger.debug("Listing users offset=%d limit=%d", offset, limit)
     rows = await conn.fetch(
@@ -114,8 +113,14 @@ async def update_user(
         WHERE user_id = $8 AND deleted = FALSE
     """
     params = [
-        data.name, data.email, password_hash, data.phone_number,
-        data.role, data.is_active, updated_by, user_id,
+        data.name,
+        data.email,
+        password_hash,
+        data.phone_number,
+        data.role,
+        data.is_active,
+        updated_by,
+        user_id,
     ]
     if current_user_id:
         query += " AND user_id = $9"

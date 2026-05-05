@@ -1,4 +1,3 @@
-
 from typing import Annotated
 
 from fastapi import Depends, HTTPException, status
@@ -8,6 +7,7 @@ from jose import ExpiredSignatureError, JWTError
 from app.utils.security import decode_access_token
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+
 
 async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)],
@@ -26,10 +26,7 @@ async def get_current_user(
         user_id: str | None = payload.get("sub")
         if user_id is None:
             raise credentials_exception
-        return {
-            "user_id": user_id,
-            "role": payload.get("role")
-        }
+        return {"user_id": user_id, "role": payload.get("role")}
 
     except ExpiredSignatureError:
         raise HTTPException(

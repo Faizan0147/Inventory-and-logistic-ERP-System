@@ -13,9 +13,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await create_pool()   # open connection pool on startup
+    await create_pool()  # open connection pool on startup
     yield
-    await close_pool()    # close pool on shutdown
+    await close_pool()  # close pool on shutdown
 
 
 app = FastAPI(
@@ -43,13 +43,9 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         first_error = errors[0]
         field_name = first_error["loc"][-1] if first_error["loc"] else "field"
         return JSONResponse(
-            status_code=422,
-            content={"detail": f"{field_name} is required"}
+            status_code=422, content={"detail": f"{field_name} is required"}
         )
-    return JSONResponse(
-        status_code=422,
-        content={"detail": "Validation error"}
-    )
+    return JSONResponse(status_code=422, content={"detail": "Validation error"})
 
 
 @app.middleware("http")
@@ -73,4 +69,3 @@ async def root():
 @app.get("/chat", include_in_schema=False)
 async def chat_ui():
     return FileResponse(BASE_DIR / "chat_ui.html")
-

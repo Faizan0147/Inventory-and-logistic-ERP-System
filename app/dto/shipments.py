@@ -9,6 +9,7 @@ ShipmentStatus = Literal["Pending", "In Transit", "Delivered", "Returned", "Canc
 
 # ── Nested summary models ────────────────────────────────────────────
 
+
 class PurchaseOrderSummary(BaseModel):
     po_id: str
     order_number: Optional[str] = None
@@ -25,6 +26,7 @@ class WarehouseSummary(BaseModel):
 
 
 # ── Shipment DTOs ────────────────────────────────────────────────────
+
 
 class ShipmentCreate(BaseModel):
     purchase_order_id: str

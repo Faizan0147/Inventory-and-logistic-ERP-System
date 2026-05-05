@@ -20,14 +20,19 @@ async def create_inventory(
 
     try:
         return await inventory_repo.create_inventory(
-            conn, body, user_id=current_user["user_id"], created_by=current_user["user_id"]
+            conn,
+            body,
+            user_id=current_user["user_id"],
+            created_by=current_user["user_id"],
         )
 
     except ValueError as e:
         raise HTTPException(status_code=409, detail=str(e))
 
     except RuntimeError as e:
-        logger.error("create_inventory failed for user %s: %s", current_user["user_id"], e)
+        logger.error(
+            "create_inventory failed for user %s: %s", current_user["user_id"], e
+        )
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -41,9 +46,14 @@ async def get_inventory(
         inventory = await inventory_repo.get_inventory(
             conn, inventory_id, user_id=_get_current_user(current_user)
         )
-        
+
     except RuntimeError as e:
-        logger.error("get_inventory(%s) failed for user %s: %s", inventory_id, current_user["user_id"], e)
+        logger.error(
+            "get_inventory(%s) failed for user %s: %s",
+            inventory_id,
+            current_user["user_id"],
+            e,
+        )
         raise HTTPException(status_code=500, detail=str(e))
 
     if not inventory:
@@ -64,7 +74,9 @@ async def list_inventory(
         )
 
     except RuntimeError as e:
-        logger.error("list_inventory failed for user %s: %s", current_user["user_id"], e)
+        logger.error(
+            "list_inventory failed for user %s: %s", current_user["user_id"], e
+        )
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -77,7 +89,9 @@ async def update_inventory(
 
     try:
         inventory = await inventory_repo.update_inventory(
-            conn, inventory_id, body,
+            conn,
+            inventory_id,
+            body,
             updated_by=current_user["user_id"],
             user_id=_get_current_user(current_user),
         )
@@ -86,7 +100,12 @@ async def update_inventory(
         raise HTTPException(status_code=409, detail=str(e))
 
     except RuntimeError as e:
-        logger.error("update_inventory(%s) failed for user %s: %s", inventory_id, current_user["user_id"], e)
+        logger.error(
+            "update_inventory(%s) failed for user %s: %s",
+            inventory_id,
+            current_user["user_id"],
+            e,
+        )
         raise HTTPException(status_code=500, detail=str(e))
 
     if not inventory:
@@ -102,16 +121,22 @@ async def delete_inventory(
 
     try:
         deleted = await inventory_repo.delete_inventory(
-            conn, inventory_id,
+            conn,
+            inventory_id,
             deleted_by=current_user["user_id"],
             user_id=_get_current_user(current_user),
         )
-        
+
     except RuntimeError as e:
-        logger.error("delete_inventory(%s) failed for user %s: %s", inventory_id, current_user["user_id"], e)
+        logger.error(
+            "delete_inventory(%s) failed for user %s: %s",
+            inventory_id,
+            current_user["user_id"],
+            e,
+        )
         raise HTTPException(status_code=500, detail=str(e))
 
     if not deleted:
         raise HTTPException(status_code=404, detail="Inventory not found")
-    
+
     return {"message": "Inventory deleted successfully"}

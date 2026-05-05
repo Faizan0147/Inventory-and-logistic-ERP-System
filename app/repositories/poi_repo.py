@@ -75,8 +75,13 @@ async def create_po_item(
             VALUES ($1, $2, $3, $4, $5, $6, $7, $7)
             RETURNING po_item_id
             """,
-            str(uuid4()), data.po_id, data.product_id,
-            data.quantity, data.price, user_id, created_by,
+            str(uuid4()),
+            data.po_id,
+            data.product_id,
+            data.quantity,
+            data.price,
+            user_id,
+            created_by,
         )
         return await get_po_item(conn, row["po_item_id"])
 
@@ -146,7 +151,14 @@ async def update_po_item(
                 updated_at = CURRENT_TIMESTAMP
             WHERE po_item_id = $6 AND deleted = FALSE
         """
-        params = [data.po_id, data.product_id, data.quantity, data.price, updated_by, po_item_id]
+        params = [
+            data.po_id,
+            data.product_id,
+            data.quantity,
+            data.price,
+            updated_by,
+            po_item_id,
+        ]
         if user_id:
             query += " AND user_id = $7"
             params.append(user_id)
@@ -160,7 +172,9 @@ async def update_po_item(
         logger.warning("update_po_item(%s): foreign key violation — %s", po_item_id, e)
         raise ValueError("Invalid po_id or product_id.")
     except asyncpg.CheckViolationError as e:
-        logger.warning("update_po_item(%s): check constraint violation — %s", po_item_id, e)
+        logger.warning(
+            "update_po_item(%s): check constraint violation — %s", po_item_id, e
+        )
         raise ValueError("Quantity must be greater than 0.")
     except asyncpg.PostgresError as e:
         logger.error("update_po_item(%s): database error — %s", po_item_id, e)

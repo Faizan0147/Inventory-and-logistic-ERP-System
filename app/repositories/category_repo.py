@@ -78,7 +78,9 @@ async def create_category(
         return await get_category(conn, row["category_id"])
 
     except asyncpg.UniqueViolationError:
-        logger.warning("create_category: duplicate category_name '%s'", data.category_name)
+        logger.warning(
+            "create_category: duplicate category_name '%s'", data.category_name
+        )
         raise ValueError(f"A category with name '{data.category_name}' already exists.")
 
     except asyncpg.ForeignKeyViolationError as e:
@@ -150,7 +152,13 @@ async def update_category(
                 updated_at         = CURRENT_TIMESTAMP
             WHERE category_id = $5 AND deleted = FALSE
         """
-        params = [data.category_name, data.description, data.parent_category_id, updated_by, category_id]
+        params = [
+            data.category_name,
+            data.description,
+            data.parent_category_id,
+            updated_by,
+            category_id,
+        ]
         if user_id:
             query += " AND user_id = $6"
             params.append(user_id)
@@ -162,11 +170,17 @@ async def update_category(
         return await get_category(conn, row["category_id"])
 
     except asyncpg.UniqueViolationError:
-        logger.warning("update_category(%s): duplicate category_name '%s'", category_id, data.category_name)
+        logger.warning(
+            "update_category(%s): duplicate category_name '%s'",
+            category_id,
+            data.category_name,
+        )
         raise ValueError(f"A category with name '{data.category_name}' already exists.")
 
     except asyncpg.ForeignKeyViolationError as e:
-        logger.warning("update_category(%s): foreign key violation — %s", category_id, e)
+        logger.warning(
+            "update_category(%s): foreign key violation — %s", category_id, e
+        )
         raise ValueError("Invalid parent_category_id.")
 
     except asyncpg.PostgresError as e:

@@ -80,15 +80,26 @@ async def create_purchase_order(
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $10)
             RETURNING po_id
             """,
-            str(uuid4()), data.supplier_id, data.warehouse_id, data.order_number,
-            data.order_date, data.expected_delivery, data.total_amount,
-            data.status, user_id, created_by,
+            str(uuid4()),
+            data.supplier_id,
+            data.warehouse_id,
+            data.order_number,
+            data.order_date,
+            data.expected_delivery,
+            data.total_amount,
+            data.status,
+            user_id,
+            created_by,
         )
         return await get_purchase_order(conn, row["po_id"])
 
     except asyncpg.UniqueViolationError:
-        logger.warning("create_purchase_order: duplicate order_number '%s'", data.order_number)
-        raise ValueError(f"A purchase order with number '{data.order_number}' already exists.")
+        logger.warning(
+            "create_purchase_order: duplicate order_number '%s'", data.order_number
+        )
+        raise ValueError(
+            f"A purchase order with number '{data.order_number}' already exists."
+        )
     except asyncpg.ForeignKeyViolationError as e:
         logger.warning("create_purchase_order: foreign key violation — %s", e)
         raise ValueError("Invalid supplier_id or warehouse_id.")
@@ -158,8 +169,15 @@ async def update_purchase_order(
             WHERE po_id = $9 AND deleted = FALSE
         """
         params = [
-            data.supplier_id, data.warehouse_id, data.order_number, data.order_date,
-            data.expected_delivery, data.total_amount, data.status, updated_by, po_id,
+            data.supplier_id,
+            data.warehouse_id,
+            data.order_number,
+            data.order_date,
+            data.expected_delivery,
+            data.total_amount,
+            data.status,
+            updated_by,
+            po_id,
         ]
         if user_id:
             query += " AND user_id = $10"
@@ -171,10 +189,18 @@ async def update_purchase_order(
         return await get_purchase_order(conn, row["po_id"])
 
     except asyncpg.UniqueViolationError:
-        logger.warning("update_purchase_order(%s): duplicate order_number '%s'", po_id, data.order_number)
-        raise ValueError(f"A purchase order with number '{data.order_number}' already exists.")
+        logger.warning(
+            "update_purchase_order(%s): duplicate order_number '%s'",
+            po_id,
+            data.order_number,
+        )
+        raise ValueError(
+            f"A purchase order with number '{data.order_number}' already exists."
+        )
     except asyncpg.ForeignKeyViolationError as e:
-        logger.warning("update_purchase_order(%s): foreign key violation — %s", po_id, e)
+        logger.warning(
+            "update_purchase_order(%s): foreign key violation — %s", po_id, e
+        )
         raise ValueError("Invalid supplier_id or warehouse_id.")
     except asyncpg.PostgresError as e:
         logger.error("update_purchase_order(%s): database error — %s", po_id, e)

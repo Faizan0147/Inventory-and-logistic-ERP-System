@@ -20,8 +20,10 @@ async def create_category(body: CategoryCreate, conn: Conn, current_user: Curren
 
 
 @router.get("/", response_model=list[CategoryRead])
-async def list_categories(conn: Conn, current_user: CurrentUser, offset: int = 0, limit: int = 100):
-    return await category_controller.list_categories(conn, offset, limit,current_user )
+async def list_categories(
+    conn: Conn, current_user: CurrentUser, offset: int = 0, limit: int = 100
+):
+    return await category_controller.list_categories(conn, offset, limit, current_user)
 
 
 @router.get("/{category_id}", response_model=CategoryRead)
@@ -30,10 +32,16 @@ async def get_category(category_id: str, conn: Conn, current_user: CurrentUser):
 
 
 @router.put("/{category_id}", response_model=CategoryRead)
-async def update_category(category_id: str, body: CategoryUpdate, conn: Conn, current_user: CurrentUser):
-    return await category_controller.update_category(conn, category_id, body, current_user)
+async def update_category(
+    category_id: str, body: CategoryUpdate, conn: Conn, current_user: CurrentUser
+):
+    return await category_controller.update_category(
+        conn, category_id, body, current_user
+    )
 
 
 @router.delete("/{category_id}", status_code=200)
-async def delete_category(category_id: str, conn: Conn, current_user: CurrentUser) -> dict:
+async def delete_category(
+    category_id: str, conn: Conn, current_user: CurrentUser
+) -> dict:
     return await category_controller.delete_category(conn, category_id, current_user)

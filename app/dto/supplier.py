@@ -2,8 +2,8 @@ from typing import Optional
 from datetime import datetime
 from pydantic import BaseModel
 
-
 # Supplier DTOs
+
 
 class SupplierCreate(BaseModel):
     supplier_name: str

@@ -1,6 +1,7 @@
 """
 Database queries for registration requests.
 """
+
 import logging
 from typing import Optional
 from uuid import uuid4
@@ -16,8 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 async def create_registration_request(
-    conn: asyncpg.Connection, 
-    data: RegistrationRequestCreate
+    conn: asyncpg.Connection, data: RegistrationRequestCreate
 ) -> RegistrationRequestRead:
 
     row = await conn.fetchrow(
@@ -42,15 +42,13 @@ async def list_pending_requests(
     conn: asyncpg.Connection,
 ) -> list[RegistrationRequestRead]:
 
-    rows = await conn.fetch(
-        """
+    rows = await conn.fetch("""
         SELECT request_id, name, email, phone, company_name,
                message, status, created_at
         FROM   registration_requests
         WHERE  status = 'PENDING'
         ORDER  BY created_at
-        """
-    )
+        """)
     return [RegistrationRequestRead(**dict(r)) for r in rows]
 
 

@@ -169,9 +169,17 @@ async def update_product(
             WHERE product_id = $11 AND deleted = FALSE
         """
         params = [
-            data.supplier_id, data.category_id, data.product_name, data.description,
-            data.sku, data.price, data.cost_price, data.weight, data.status,
-            updated_by, product_id,
+            data.supplier_id,
+            data.category_id,
+            data.product_name,
+            data.description,
+            data.sku,
+            data.price,
+            data.cost_price,
+            data.weight,
+            data.status,
+            updated_by,
+            product_id,
         ]
         if user_id:
             query += " AND user_id = $12"

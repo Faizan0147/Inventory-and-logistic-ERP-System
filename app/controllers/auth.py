@@ -26,20 +26,26 @@ async def register(
         return result
 
     except asyncpg.UniqueViolationError:
-        raise HTTPException(status_code=409, detail="A registration request for this email already exists")
+        raise HTTPException(
+            status_code=409,
+            detail="A registration request for this email already exists",
+        )
 
     except asyncpg.PostgresError as exc:
-        raise HTTPException(status_code=500, detail="DB error: Failed to submit registration request")
+        raise HTTPException(
+            status_code=500, detail="DB error: Failed to submit registration request"
+        )
 
 
-async def login(conn: asyncpg.Connection, 
-                body: LoginRequest) -> TokenResponse: 
+async def login(conn: asyncpg.Connection, body: LoginRequest) -> TokenResponse:
 
     try:
         user = await users_repo.get_user_by_email(conn, body.email)
-        
+
     except asyncpg.PostgresError as exc:
-        raise HTTPException(status_code=500, detail="DB error: Login failed due to a server error")
+        raise HTTPException(
+            status_code=500, detail="DB error: Login failed due to a server error"
+        )
 
     if not user or not verify_password(body.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Invalid email or password")
@@ -54,10 +60,14 @@ async def login(conn: asyncpg.Connection,
                 "role": user["role"],
             }
         )
-    
+
     except Exception as exc:
-        logger.error("Token creation failed for email=%s: %s", body.email, exc, exc_info=True)
-        raise HTTPException(status_code=500, detail="Login failed due to a server error")
+        logger.error(
+            "Token creation failed for email=%s: %s", body.email, exc, exc_info=True
+        )
+        raise HTTPException(
+            status_code=500, detail="Login failed due to a server error"
+        )
 
     return TokenResponse(
         access_token=token,
@@ -65,6 +75,6 @@ async def login(conn: asyncpg.Connection,
             user_id=str(user["user_id"]),
             name=user["name"],
             email=user["email"],
-            role=user["role"]
+            role=user["role"],
         ),
     )

@@ -3,8 +3,8 @@ from datetime import datetime
 from decimal import Decimal
 from pydantic import BaseModel
 
-
 # ── Nested summary models ────────────────────────────────────────────
+
 
 class SupplierSummary(BaseModel):
     supplier_id: str
@@ -20,6 +20,7 @@ class CategorySummary(BaseModel):
 
 
 # ── Product DTOs ─────────────────────────────────────────────────────
+
 
 class ProductCreate(BaseModel):
     supplier_id: str

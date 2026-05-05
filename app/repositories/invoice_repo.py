@@ -37,7 +37,9 @@ def _build(row: asyncpg.Record) -> InvoiceRead:
             contact_phone=d.get("contact_phone"),
         )
     purchase_order = None
-    if d.get("po_id") and (d.get("order_number") is not None or d.get("order_date") is not None):
+    if d.get("po_id") and (
+        d.get("order_number") is not None or d.get("order_date") is not None
+    ):
         purchase_order = PurchaseOrderSummary(
             po_id=d["po_id"],
             order_number=d.get("order_number"),
@@ -78,14 +80,25 @@ async def create_invoice(
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $9)
             RETURNING invoice_id
             """,
-            str(uuid4()), data.supplier_id, data.po_id, data.invoice_number,
-            data.invoice_date, data.total_amount, data.status, user_id, created_by,
+            str(uuid4()),
+            data.supplier_id,
+            data.po_id,
+            data.invoice_number,
+            data.invoice_date,
+            data.total_amount,
+            data.status,
+            user_id,
+            created_by,
         )
         return await get_invoice(conn, row["invoice_id"])
 
     except asyncpg.UniqueViolationError:
-        logger.warning("create_invoice: duplicate invoice_number '%s'", data.invoice_number)
-        raise ValueError(f"An invoice with number '{data.invoice_number}' already exists.")
+        logger.warning(
+            "create_invoice: duplicate invoice_number '%s'", data.invoice_number
+        )
+        raise ValueError(
+            f"An invoice with number '{data.invoice_number}' already exists."
+        )
     except asyncpg.ForeignKeyViolationError as e:
         logger.warning("create_invoice: foreign key violation — %s", e)
         raise ValueError("Invalid supplier_id or po_id.")
@@ -154,8 +167,14 @@ async def update_invoice(
             WHERE invoice_id = $8 AND deleted = FALSE
         """
         params = [
-            data.supplier_id, data.po_id, data.invoice_number,
-            data.invoice_date, data.total_amount, data.status, updated_by, invoice_id,
+            data.supplier_id,
+            data.po_id,
+            data.invoice_number,
+            data.invoice_date,
+            data.total_amount,
+            data.status,
+            updated_by,
+            invoice_id,
         ]
         if user_id:
             query += " AND user_id = $9"
@@ -167,8 +186,14 @@ async def update_invoice(
         return await get_invoice(conn, row["invoice_id"])
 
     except asyncpg.UniqueViolationError:
-        logger.warning("update_invoice(%s): duplicate invoice_number '%s'", invoice_id, data.invoice_number)
-        raise ValueError(f"An invoice with number '{data.invoice_number}' already exists.")
+        logger.warning(
+            "update_invoice(%s): duplicate invoice_number '%s'",
+            invoice_id,
+            data.invoice_number,
+        )
+        raise ValueError(
+            f"An invoice with number '{data.invoice_number}' already exists."
+        )
     except asyncpg.ForeignKeyViolationError as e:
         logger.warning("update_invoice(%s): foreign key violation — %s", invoice_id, e)
         raise ValueError("Invalid supplier_id or po_id.")

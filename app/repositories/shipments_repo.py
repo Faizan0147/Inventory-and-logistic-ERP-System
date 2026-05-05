@@ -84,15 +84,27 @@ async def create_shipment(
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $11)
             RETURNING shipment_id
             """,
-            str(uuid4()), data.purchase_order_id, data.warehouse_id, user_id,
-            data.carrier_name, data.tracking_number, data.shipment_date,
-            data.estimated_arrival, data.status, data.notes, created_by,
+            str(uuid4()),
+            data.purchase_order_id,
+            data.warehouse_id,
+            user_id,
+            data.carrier_name,
+            data.tracking_number,
+            data.shipment_date,
+            data.estimated_arrival,
+            data.status,
+            data.notes,
+            created_by,
         )
         return await get_shipment(conn, row["shipment_id"])
 
     except asyncpg.UniqueViolationError:
-        logger.warning("create_shipment: duplicate tracking_number '%s'", data.tracking_number)
-        raise ValueError(f"A shipment with tracking number '{data.tracking_number}' already exists.")
+        logger.warning(
+            "create_shipment: duplicate tracking_number '%s'", data.tracking_number
+        )
+        raise ValueError(
+            f"A shipment with tracking number '{data.tracking_number}' already exists."
+        )
     except asyncpg.ForeignKeyViolationError as e:
         logger.warning("create_shipment: foreign key violation — %s", e)
         raise ValueError("Invalid purchase_order_id or warehouse_id.")
@@ -163,9 +175,16 @@ async def update_shipment(
             WHERE shipment_id = $10 AND deleted = FALSE
         """
         params = [
-            data.warehouse_id, data.carrier_name, data.tracking_number,
-            data.shipment_date, data.estimated_arrival, data.actual_arrival,
-            data.status, data.notes, updated_by, shipment_id,
+            data.warehouse_id,
+            data.carrier_name,
+            data.tracking_number,
+            data.shipment_date,
+            data.estimated_arrival,
+            data.actual_arrival,
+            data.status,
+            data.notes,
+            updated_by,
+            shipment_id,
         ]
         if user_id:
             query += " AND user_id = $11"
@@ -177,10 +196,18 @@ async def update_shipment(
         return await get_shipment(conn, row["shipment_id"])
 
     except asyncpg.UniqueViolationError:
-        logger.warning("update_shipment(%s): duplicate tracking_number '%s'", shipment_id, data.tracking_number)
-        raise ValueError(f"A shipment with tracking number '{data.tracking_number}' already exists.")
+        logger.warning(
+            "update_shipment(%s): duplicate tracking_number '%s'",
+            shipment_id,
+            data.tracking_number,
+        )
+        raise ValueError(
+            f"A shipment with tracking number '{data.tracking_number}' already exists."
+        )
     except asyncpg.ForeignKeyViolationError as e:
-        logger.warning("update_shipment(%s): foreign key violation — %s", shipment_id, e)
+        logger.warning(
+            "update_shipment(%s): foreign key violation — %s", shipment_id, e
+        )
         raise ValueError("Invalid warehouse_id.")
     except asyncpg.PostgresError as e:
         logger.error("update_shipment(%s): database error — %s", shipment_id, e)

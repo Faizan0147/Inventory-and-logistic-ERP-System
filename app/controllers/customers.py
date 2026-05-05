@@ -20,7 +20,8 @@ async def create_customer(
 
     try:
         return await customer_repo.create_customer(
-            conn, data,
+            conn,
+            data,
             user_id=current_user["user_id"],
             created_by=current_user["user_id"],
         )
@@ -28,7 +29,9 @@ async def create_customer(
         raise HTTPException(status_code=409, detail=str(e))
 
     except RuntimeError as e:
-        logger.error("create_customer failed for user %s: %s", current_user["user_id"], e)
+        logger.error(
+            "create_customer failed for user %s: %s", current_user["user_id"], e
+        )
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -44,7 +47,12 @@ async def get_customer(
         )
 
     except RuntimeError as e:
-        logger.error("get_customer(%s) failed for user %s: %s", customer_id, current_user["user_id"], e)
+        logger.error(
+            "get_customer(%s) failed for user %s: %s",
+            customer_id,
+            current_user["user_id"],
+            e,
+        )
         raise HTTPException(status_code=500, detail=str(e))
 
     if not customer:
@@ -65,7 +73,9 @@ async def list_customers(
         )
 
     except RuntimeError as e:
-        logger.error("list_customers failed for user %s: %s", current_user["user_id"], e)
+        logger.error(
+            "list_customers failed for user %s: %s", current_user["user_id"], e
+        )
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -78,7 +88,9 @@ async def update_customer(
 
     try:
         customer = await customer_repo.update_customer(
-            conn, customer_id, data,
+            conn,
+            customer_id,
+            data,
             updated_by=current_user["user_id"],
             user_id=_get_current_user(current_user),
         )
@@ -86,7 +98,12 @@ async def update_customer(
         raise HTTPException(status_code=409, detail=str(e))
 
     except RuntimeError as e:
-        logger.error("update_customer(%s) failed for user %s: %s", customer_id, current_user["user_id"], e)
+        logger.error(
+            "update_customer(%s) failed for user %s: %s",
+            customer_id,
+            current_user["user_id"],
+            e,
+        )
         raise HTTPException(status_code=500, detail=str(e))
 
     if not customer:
@@ -102,16 +119,22 @@ async def delete_customer(
 
     try:
         deleted = await customer_repo.delete_customer(
-            conn, customer_id,
+            conn,
+            customer_id,
             deleted_by=current_user["user_id"],
             user_id=_get_current_user(current_user),
         )
 
     except RuntimeError as e:
-        logger.error("delete_customer(%s) failed for user %s: %s", customer_id, current_user["user_id"], e)
+        logger.error(
+            "delete_customer(%s) failed for user %s: %s",
+            customer_id,
+            current_user["user_id"],
+            e,
+        )
         raise HTTPException(status_code=500, detail=str(e))
 
     if not deleted:
         raise HTTPException(status_code=404, detail="Customer not found")
-    
+
     return {"message": "Customer deleted successfully"}

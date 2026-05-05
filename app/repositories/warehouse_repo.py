@@ -3,20 +3,16 @@ from uuid import uuid4
 from typing import Optional
 import asyncpg
 from fastapi import HTTPException
-from app.dto.warehouse import (
-    WarehouseCreate,
-    WarehouseRead,
-    WarehouseUpdate
-)
+from app.dto.warehouse import WarehouseCreate, WarehouseRead, WarehouseUpdate
 
 logger = logging.getLogger(__name__)
 
 
 async def create_warehouse(
-    conn: asyncpg.Connection, 
-    data: WarehouseCreate, 
+    conn: asyncpg.Connection,
+    data: WarehouseCreate,
     user_id: str,
-    created_by: Optional[str] = None
+    created_by: Optional[str] = None,
 ) -> WarehouseRead:
     try:
         row = await conn.fetchrow(
@@ -29,21 +25,25 @@ async def create_warehouse(
             RETURNING warehouse_id, user_id, warehouse_name, location, city, capacity, phone, is_active,
                     created_by, updated_by
             """,
-            str(uuid4()), 
+            str(uuid4()),
             user_id,
-            data.warehouse_name, 
-            data.location, 
+            data.warehouse_name,
+            data.location,
             data.city,
-            data.capacity, 
-            data.phone, 
-            data.is_active, 
-            created_by
+            data.capacity,
+            data.phone,
+            data.is_active,
+            created_by,
         )
         return WarehouseRead(**dict(row))
 
     except asyncpg.UniqueViolationError:
-        logger.warning("create_warehouse: duplicate warehouse_name '%s'", data.warehouse_name)
-        raise ValueError(f"A warehouse with name '{data.warehouse_name}' already exists.")
+        logger.warning(
+            "create_warehouse: duplicate warehouse_name '%s'", data.warehouse_name
+        )
+        raise ValueError(
+            f"A warehouse with name '{data.warehouse_name}' already exists."
+        )
 
     except asyncpg.ForeignKeyViolationError as e:
         logger.warning("create_warehouse: foreign key violation — %s", e)
@@ -55,9 +55,7 @@ async def create_warehouse(
 
 
 async def get_warehouse(
-    conn: asyncpg.Connection, 
-    warehouse_id: str,
-    user_id: Optional[str] = None
+    conn: asyncpg.Connection, warehouse_id: str, user_id: Optional[str] = None
 ) -> Optional[WarehouseRead]:
     try:
         query = """
@@ -80,10 +78,10 @@ async def get_warehouse(
 
 
 async def list_warehouses(
-    conn: asyncpg.Connection, 
-    offset: int = 0, 
+    conn: asyncpg.Connection,
+    offset: int = 0,
     limit: int = 100,
-    user_id: Optional[str] = None
+    user_id: Optional[str] = None,
 ) -> list[WarehouseRead]:
     try:
         query = """
@@ -98,7 +96,7 @@ async def list_warehouses(
             params.append(user_id)
 
         query += " ORDER BY warehouse_name LIMIT $1 OFFSET $2"
-        
+
         rows = await conn.fetch(query, *params)
         return [WarehouseRead(**dict(r)) for r in rows]
 
@@ -108,11 +106,11 @@ async def list_warehouses(
 
 
 async def update_warehouse(
-    conn: asyncpg.Connection, 
-    warehouse_id: str, 
-    data: WarehouseUpdate, 
+    conn: asyncpg.Connection,
+    warehouse_id: str,
+    data: WarehouseUpdate,
     updated_by: Optional[str] = None,
-    user_id: Optional[str] = None
+    user_id: Optional[str] = None,
 ) -> Optional[WarehouseRead]:
     try:
         query = """
@@ -129,8 +127,14 @@ async def update_warehouse(
             WHERE warehouse_id = $8 AND deleted = FALSE
         """
         params = [
-            data.warehouse_name, data.location, data.city, data.capacity,
-            data.phone, data.is_active, updated_by, warehouse_id,
+            data.warehouse_name,
+            data.location,
+            data.city,
+            data.capacity,
+            data.phone,
+            data.is_active,
+            updated_by,
+            warehouse_id,
         ]
         if user_id:
             query += " AND user_id = $9"
@@ -144,11 +148,19 @@ async def update_warehouse(
         return WarehouseRead(**dict(row)) if row else None
 
     except asyncpg.UniqueViolationError:
-        logger.warning("update_warehouse(%s): duplicate warehouse_name '%s'", warehouse_id, data.warehouse_name)
-        raise ValueError(f"A warehouse with name '{data.warehouse_name}' already exists.")
+        logger.warning(
+            "update_warehouse(%s): duplicate warehouse_name '%s'",
+            warehouse_id,
+            data.warehouse_name,
+        )
+        raise ValueError(
+            f"A warehouse with name '{data.warehouse_name}' already exists."
+        )
 
     except asyncpg.ForeignKeyViolationError as e:
-        logger.warning("update_warehouse(%s): foreign key violation — %s", warehouse_id, e)
+        logger.warning(
+            "update_warehouse(%s): foreign key violation — %s", warehouse_id, e
+        )
         raise ValueError("Invalid manager_id.")
 
     except asyncpg.PostgresError as e:
@@ -157,10 +169,10 @@ async def update_warehouse(
 
 
 async def delete_warehouse(
-    conn: asyncpg.Connection, 
-    warehouse_id: str, 
+    conn: asyncpg.Connection,
+    warehouse_id: str,
     deleted_by: Optional[str] = None,
-    user_id: Optional[str] = None
+    user_id: Optional[str] = None,
 ) -> bool:
     try:
         query = """

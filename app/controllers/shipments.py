@@ -20,7 +20,8 @@ async def create_shipment(
 
     try:
         return await shipments_repo.create_shipment(
-            conn, data,
+            conn,
+            data,
             user_id=current_user["user_id"],
             created_by=current_user["user_id"],
         )
@@ -29,7 +30,9 @@ async def create_shipment(
         raise HTTPException(status_code=409, detail=str(e))
 
     except RuntimeError as e:
-        logger.error("create_shipment failed for user %s: %s", current_user["user_id"], e)
+        logger.error(
+            "create_shipment failed for user %s: %s", current_user["user_id"], e
+        )
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -45,7 +48,12 @@ async def get_shipment(
         )
 
     except RuntimeError as e:
-        logger.error("get_shipment(%s) failed for user %s: %s", shipment_id, current_user["user_id"], e)
+        logger.error(
+            "get_shipment(%s) failed for user %s: %s",
+            shipment_id,
+            current_user["user_id"],
+            e,
+        )
         raise HTTPException(status_code=500, detail=str(e))
 
     if not shipment:
@@ -66,7 +74,9 @@ async def list_shipments(
         )
 
     except RuntimeError as e:
-        logger.error("list_shipments failed for user %s: %s", current_user["user_id"], e)
+        logger.error(
+            "list_shipments failed for user %s: %s", current_user["user_id"], e
+        )
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -79,7 +89,9 @@ async def update_shipment(
 
     try:
         shipment = await shipments_repo.update_shipment(
-            conn, shipment_id, data,
+            conn,
+            shipment_id,
+            data,
             updated_by=current_user["user_id"],
             user_id=_get_current_user(current_user),
         )
@@ -88,7 +100,12 @@ async def update_shipment(
         raise HTTPException(status_code=409, detail=str(e))
 
     except RuntimeError as e:
-        logger.error("update_shipment(%s) failed for user %s: %s", shipment_id, current_user["user_id"], e)
+        logger.error(
+            "update_shipment(%s) failed for user %s: %s",
+            shipment_id,
+            current_user["user_id"],
+            e,
+        )
         raise HTTPException(status_code=500, detail=str(e))
 
     if not shipment:
@@ -104,16 +121,22 @@ async def delete_shipment(
 
     try:
         deleted = await shipments_repo.delete_shipment(
-            conn, shipment_id,
+            conn,
+            shipment_id,
             deleted_by=current_user["user_id"],
             user_id=_get_current_user(current_user),
         )
-        
+
     except RuntimeError as e:
-        logger.error("delete_shipment(%s) failed for user %s: %s", shipment_id, current_user["user_id"], e)
+        logger.error(
+            "delete_shipment(%s) failed for user %s: %s",
+            shipment_id,
+            current_user["user_id"],
+            e,
+        )
         raise HTTPException(status_code=500, detail=str(e))
 
     if not deleted:
         raise HTTPException(status_code=404, detail="Shipment not found")
-    
+
     return {"message": "Shipment deleted successfully"}

@@ -125,8 +125,6 @@ async def send_credentials_email(to_email: str, name: str, password: str) -> Non
     msg["To"] = to_email
     msg.attach(MIMEText(html_body, "html"))
 
-
-
     loop = asyncio.get_running_loop()
     await loop.run_in_executor(None, _smtp_send, msg)
 
