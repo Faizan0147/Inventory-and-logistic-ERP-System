@@ -1,15 +1,20 @@
+import asyncio
+import logging
 from typing import Any
+
 from langchain_openai import ChatOpenAI
 from langgraph.prebuilt import create_react_agent
+
 from app.config import settings
 from app.langchain_agent.database_tools import set_user_context, reset_user_context
 from app.langchain_agent.tools import ALL_TOOLS
+from app.repositories import chat_repo
 
-# In-memory conversation history store: { session_id: [messages] }
-_conversation_store: dict[str, list[dict]] = {}
+logger = logging.getLogger(__name__)
 
 
-# ──system prompt ──────────────────────────────
+# ── System Prompt ────────────────────────────────────────────────
+
 SYSTEM_PROMPT = (
     "You are a helpful ERP data assistant. You have access to tools for database exploration "
     "and SQL execution — use them when the user asks about tables, schemas, or data.\n\n"
@@ -43,21 +48,76 @@ SYSTEM_PROMPT = (
 )
 
 
-def clear_session(session_id: str) -> None:
-    """Clear conversation history for a session."""
-    _conversation_store.pop(session_id, None)
+# ── Title Generation ─────────────────────────────────────────────
+
+async def _generate_title(conversation_id: str, user_id: str, first_message: str) -> None:
+    """
+    Background task: asks the LLM for a short title based on the first user message,
+    then saves it to the database. Failures are logged but never surface to the user.
+    """
+    try:
+        llm = ChatOpenAI(
+            api_key=settings.GROQ_API_KEY,
+            base_url="https://api.groq.com/openai/v1",
+            model=settings.GROQ_MODEL,
+            temperature=0.3,
+        )
+        response = await llm.ainvoke([
+            {
+                "role": "user",
+                "content": (
+                    f"Generate a short 4-6 word title for a conversation that starts with: "
+                    f"'{first_message[:300]}'. "
+                    f"Reply with ONLY the title text, no quotes, no punctuation at the end."
+                ),
+            }
+        ])
+        title = response.content.strip().strip('"').strip("'")[:200]
+        if title:
+            await chat_repo.update_title(conversation_id, user_id, title)
+            logger.info("Auto-titled conversation %s: %s", conversation_id, title)
+    except Exception as exc:
+        logger.warning("Title generation failed for %s: %s", conversation_id, exc)
+
+
+# ── Main Chat Function ──────────────────────────────────────────
 
 
 async def chat_with_langchain(
     prompt: str,
     user: dict,
-    session_id: str | None = None,
+    conversation_id: str | None = None,
     debug: bool = False,
 ) -> dict[str, Any]:
 
     if not settings.GROQ_API_KEY:
         raise ValueError("GROQ_API_KEY is missing in .env")
 
+    user_id = user["user_id"]
+
+    # ── 1. Create or validate conversation ───────────────────────
+    is_new_conversation = False
+
+    if conversation_id is None:
+        # New conversation — create it in the database
+        conv = await chat_repo.create_conversation(user_id)
+        conversation_id = conv["conversation_id"]
+        is_new_conversation = True
+    else:
+        # Existing conversation — verify ownership
+        conv = await chat_repo.get_conversation(conversation_id, user_id)
+        if not conv:
+            raise ValueError("Conversation not found or access denied.")
+
+    # ── 2. Load message history from database ────────────────────
+    db_messages = await chat_repo.get_messages(conversation_id, user_id)
+    history = [{"role": m["role"], "content": m["content"]} for m in db_messages]
+    messages = history + [{"role": "user", "content": prompt}]
+
+    # ── 3. Save user message to DB BEFORE calling LLM ────────────
+    await chat_repo.add_message(conversation_id, "user", prompt)
+
+    # ── 4. Call the LangGraph agent ──────────────────────────────
     llm = ChatOpenAI(
         api_key=settings.GROQ_API_KEY,
         base_url="https://api.groq.com/openai/v1",
@@ -71,10 +131,6 @@ async def chat_with_langchain(
         prompt=SYSTEM_PROMPT,
     )
 
-    # Build message history
-    history = _conversation_store.get(session_id, []) if session_id else []
-    messages = history + [{"role": "user", "content": prompt}]
-
     token = set_user_context(user)
     try:
         result = await agent.ainvoke(
@@ -82,7 +138,7 @@ async def chat_with_langchain(
             config={"recursion_limit": settings.TOOL_CALL_MAX_STEPS},
         )
 
-        # Extract the final AI message
+        # ── 5. Extract the final AI reply ────────────────────────
         result_messages = result.get("messages", [])
         reply = ""
         for msg in reversed(result_messages):
@@ -94,13 +150,18 @@ async def chat_with_langchain(
         if not reply:
             reply = "I could not generate a response."
 
-        # Persist updated history for this session
-        if session_id:
-            _conversation_store[session_id] = messages + [
-                {"role": "assistant", "content": reply}
-            ]
+        # ── 6. Save assistant reply to DB ────────────────────────
+        await chat_repo.add_message(conversation_id, "assistant", reply)
 
-        out: dict[str, Any] = {"reply": reply}
+        # ── 7. Auto-generate title for new conversations ─────────
+        if is_new_conversation:
+            asyncio.create_task(_generate_title(conversation_id, user_id, prompt))
+
+        # ── 8. Build response ────────────────────────────────────
+        out: dict[str, Any] = {
+            "reply": reply,
+            "conversation_id": conversation_id,
+        }
 
         if debug:
             debug_messages = []

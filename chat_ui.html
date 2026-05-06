@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -50,8 +51,15 @@
     }
 
     @keyframes rise {
-      from { transform: translateY(18px); opacity: 0; }
-      to { transform: translateY(0); opacity: 1; }
+      from {
+        transform: translateY(18px);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
     }
 
     .sidebar {
@@ -60,7 +68,87 @@
       padding: 24px;
       display: flex;
       flex-direction: column;
-      gap: 18px;
+      gap: 14px;
+      overflow: hidden;
+    }
+
+    .sidebar-header {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .new-chat-btn {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid rgba(236, 254, 255, 0.3);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.1);
+      color: #ecfeff;
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .new-chat-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .conv-list {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .conv-list::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .conv-list::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+    }
+
+    .conv-group-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: rgba(204, 251, 241, 0.6);
+      padding: 8px 8px 2px;
+      font-weight: 600;
+    }
+
+    .conv-item {
+      padding: 9px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition: background 0.15s ease;
+      color: #ccfbf1;
+    }
+
+    .conv-item:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .conv-item.active {
+      background: rgba(255, 255, 255, 0.18);
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .conv-empty {
+      font-size: 0.82rem;
+      color: rgba(204, 251, 241, 0.5);
+      padding: 12px 8px;
+      text-align: center;
     }
 
     .brand {
@@ -183,7 +271,8 @@
       font-weight: 600;
     }
 
-    input, textarea {
+    input,
+    textarea {
       border: 1px solid #cbd5e1;
       border-radius: 10px;
       padding: 10px 12px;
@@ -193,7 +282,8 @@
       background: #fff;
     }
 
-    input:focus, textarea:focus {
+    input:focus,
+    textarea:focus {
       border-color: var(--brand-2);
     }
 
@@ -264,8 +354,15 @@
     }
 
     @keyframes fade {
-      from { opacity: 0; transform: translateY(4px); }
-      to { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(4px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     .msg.user {
@@ -307,16 +404,17 @@
     }
   </style>
 </head>
+
 <body>
   <div class="shell">
     <aside class="sidebar">
-      <div class="brand">Warehouse ERP AI Console</div>
-      <div class="sub">
-        Login once, then ask natural-language questions. The assistant uses LangChain tools for schema lookup and SQL operations.
+      <div class="sidebar-header">
+        <div class="brand">GodaamX</div>
+        <button class="new-chat-btn" id="newChatBtn">+ New Chat</button>
       </div>
-      <div class="pill">LangChain Agent</div>
-      <div class="pill">Role-aware SQL access</div>
-      <div class="pill">Session-scoped token auth</div>
+      <div class="conv-list" id="convList">
+        <div class="conv-empty">Login to see your chats</div>
+      </div>
     </aside>
 
     <main class="content">
@@ -354,7 +452,8 @@
           <div id="messages" class="messages"></div>
           <div>
             <div class="composer">
-              <textarea id="prompt" rows="3" placeholder="Example: show all supplier tables and then fetch schema of users"></textarea>
+              <textarea id="prompt" rows="3"
+                placeholder="Example: show all supplier tables and then fetch schema of users"></textarea>
               <button id="sendBtn" class="btn-primary">Send</button>
             </div>
             <div class="auth-row" style="margin-top:10px;">
@@ -376,6 +475,8 @@
     const messages = document.getElementById("messages");
 
     let accessToken = "";
+    let activeConversationId = null;  // tracks the current conversation
+    let conversations = [];           // sidebar data
 
     function setLoggedIn(loggedIn) {
       loginPanel.classList.toggle("active", !loggedIn);
@@ -392,6 +493,96 @@
       messages.scrollTop = messages.scrollHeight;
     }
 
+    // ── Start a fresh conversation ──────────────────────────────
+    function startNewChat() {
+      activeConversationId = null;
+      messages.innerHTML = "";
+      addMessage("bot", "New conversation started. Ask anything about your warehouse database.");
+      document.getElementById("prompt").focus();
+    }
+
+    // ── Load conversation list from backend ─────────────────────
+    async function loadConversations() {
+      try {
+        const res = await fetch("/api/v1/chat/conversations", {
+          headers: { "Authorization": `Bearer ${accessToken}` },
+          credentials: "include",
+        });
+        if (res.ok) {
+          conversations = await res.json();
+          renderSidebar();
+        }
+      } catch (err) {
+        console.error("Failed to load conversations:", err);
+      }
+    }
+
+    // ── Render conversation list in sidebar ──────────────────────
+    function renderSidebar() {
+      const list = document.getElementById("convList");
+      if (!conversations.length) {
+        list.innerHTML = '<div class="conv-empty">No conversations yet</div>';
+        return;
+      }
+
+      // Group by date
+      const groups = {};
+      const now = new Date();
+      for (const c of conversations) {
+        const d = new Date(c.updated_at);
+        const diff = Math.floor((now - d) / 86400000);
+        let label;
+        if (diff === 0) label = "Today";
+        else if (diff === 1) label = "Yesterday";
+        else if (diff <= 7) label = "Last 7 Days";
+        else label = "Older";
+
+        if (!groups[label]) groups[label] = [];
+        groups[label].push(c);
+      }
+
+      let html = "";
+      for (const [label, items] of Object.entries(groups)) {
+        html += `<div class="conv-group-label">${label}</div>`;
+        for (const c of items) {
+          const isActive = c.conversation_id === activeConversationId;
+          html += `<div class="conv-item${isActive ? ' active' : ''}" data-id="${c.conversation_id}">${c.title}</div>`;
+        }
+      }
+      list.innerHTML = html;
+
+      // Attach click handlers
+      list.querySelectorAll(".conv-item").forEach(el => {
+        el.addEventListener("click", () => {
+          loadConversation(el.dataset.id);
+          // Update active state visually
+          list.querySelectorAll(".conv-item").forEach(e => e.classList.remove("active"));
+          el.classList.add("active");
+        });
+      });
+    }
+
+    // ── Load messages for a specific conversation ───────────────
+    async function loadConversation(conversationId) {
+      try {
+        const res = await fetch(`/api/v1/chat/conversations/${conversationId}/messages`, {
+          headers: { "Authorization": `Bearer ${accessToken}` },
+          credentials: "include",
+        });
+        if (!res.ok) return;
+
+        const msgs = await res.json();
+        activeConversationId = conversationId;
+        messages.innerHTML = "";
+        for (const m of msgs) {
+          addMessage(m.role === "user" ? "user" : "bot", m.content);
+        }
+      } catch (err) {
+        console.error("Failed to load conversation:", err);
+      }
+    }
+
+    // ── Login ───────────────────────────────────────────────────
     async function login() {
       authError.textContent = "";
       const email = document.getElementById("email").value.trim();
@@ -424,13 +615,18 @@
         }
 
         setLoggedIn(true);
+        activeConversationId = null;
         messages.innerHTML = "";
         addMessage("bot", "You are connected. Ask anything about your warehouse database.");
+
+        // Load existing conversations in background
+        await loadConversations();
       } catch (err) {
         authError.textContent = "Unable to reach server.";
       }
     }
 
+    // ── Send message ────────────────────────────────────────────
     async function sendPrompt() {
       const box = document.getElementById("prompt");
       const prompt = box.value.trim();
@@ -439,17 +635,21 @@
       addMessage("user", prompt);
       box.value = "";
 
-      const endpoint = "/api/v1/chat/message";
+      // Build request body — include conversation_id if we have one
+      const body = { prompt };
+      if (activeConversationId) {
+        body.conversation_id = activeConversationId;
+      }
 
       try {
-        const res = await fetch(endpoint, {
+        const res = await fetch("/api/v1/chat/message", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${accessToken}`
           },
           credentials: "include",
-          body: JSON.stringify({ prompt })
+          body: JSON.stringify(body)
         });
 
         const data = await res.json();
@@ -459,13 +659,23 @@
           return;
         }
 
+        // Capture the conversation_id (important for new conversations)
+        if (data.conversation_id) {
+          activeConversationId = data.conversation_id;
+        }
+
         addMessage("bot", data.reply || "No response from assistant.");
+
+        // Refresh sidebar so new conversations / updated titles appear
+        await loadConversations();
 
       } catch (err) {
         addMessage("bot", "Network error: unable to call chat API.");
       }
     }
 
+    // ── Event listeners ─────────────────────────────────────────
+    document.getElementById("newChatBtn").addEventListener("click", startNewChat);
     document.getElementById("loginBtn").addEventListener("click", login);
     document.getElementById("clearBtn").addEventListener("click", () => {
       document.getElementById("email").value = "";
@@ -483,10 +693,13 @@
 
     document.getElementById("logoutBtn").addEventListener("click", () => {
       accessToken = "";
+      activeConversationId = null;
+      conversations = [];
       setLoggedIn(false);
     });
 
     setLoggedIn(false);
   </script>
 </body>
+
 </html>
