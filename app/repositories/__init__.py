@@ -1,0 +1,33 @@
+from app.repositories import (
+    auth_repo,
+    category_repo,
+    customer_repo,
+    inventory_repo,
+    invoice_item_repo,
+    invoice_repo,
+    poi_repo,
+    product_repo,
+    purchase_order_repo,
+    shipments_repo,
+    supplier_repo,
+    users_repo,
+    warehouse_repo,
+    dashboard_repo,
+)
+
+__all__ = [
+    "auth_repo",
+    "category_repo",
+    "customer_repo",
+    "inventory_repo",
+    "invoice_item_repo",
+    "invoice_repo",
+    "poi_repo",
+    "product_repo",
+    "purchase_order_repo",
+    "shipments_repo",
+    "supplier_repo",
+    "users_repo",
+    "warehouse_repo",
+    "dashboard_repo",
+]
