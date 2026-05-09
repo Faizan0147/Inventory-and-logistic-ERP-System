@@ -13,6 +13,7 @@ from app.repositories import (
     users_repo,
     warehouse_repo,
     dashboard_repo,
+    reports_repo,
 )
 
 __all__ = [
@@ -30,4 +31,5 @@ __all__ = [
     "users_repo",
     "warehouse_repo",
     "dashboard_repo",
+    "reports_repo",
 ]

@@ -16,6 +16,7 @@ from app.routes import (
     shipments,
     langchain_chat,
     dashboard,
+    reports,
 )
 api_router = APIRouter()
 
@@ -39,3 +40,4 @@ api_router.include_router(customers.router, prefix="/customers", tags=["Customer
 api_router.include_router(shipments.router, prefix="/shipments", tags=["Shipments"])
 api_router.include_router(langchain_chat.router, prefix="/chat", tags=["Chat"])
 api_router.include_router(dashboard.router, prefix="/dashboard", tags=["Dashboard"])
+api_router.include_router(reports.router, prefix="/reports", tags=["Reports"])
